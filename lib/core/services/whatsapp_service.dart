@@ -1,9 +1,9 @@
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_laundry_offline_app/data/models/order.dart';
-import 'package:flutter_laundry_offline_app/data/repositories/settings_repository.dart';
-import 'package:flutter_laundry_offline_app/core/utils/currency_formatter.dart';
-import 'package:flutter_laundry_offline_app/core/utils/date_formatter.dart';
-import 'package:flutter_laundry_offline_app/core/constants/app_constants.dart';
+import 'package:flutter_pos_offline/data/models/order.dart';
+import 'package:flutter_pos_offline/data/repositories/settings_repository.dart';
+import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
+import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
+import 'package:flutter_pos_offline/core/constants/app_constants.dart';
 
 class WhatsAppService {
   static final WhatsAppService _instance = WhatsAppService._internal();
@@ -12,12 +12,12 @@ class WhatsAppService {
 
   final SettingsRepository _settingsRepository = SettingsRepository();
 
-  Future<Map<String, String>> _getLaundryInfo() async {
+  Future<Map<String, String>> _getStoreInfo() async {
     final settings = await _settingsRepository.getAllSettings();
     return {
-      'name': settings[AppConstants.keyLaundryName] ?? AppConstants.defaultLaundryName,
-      'address': settings[AppConstants.keyLaundryAddress] ?? AppConstants.defaultLaundryAddress,
-      'phone': settings[AppConstants.keyLaundryPhone] ?? AppConstants.defaultLaundryPhone,
+      'name': settings[AppConstants.keyStoreName] ?? AppConstants.defaultStoreName,
+      'address': settings[AppConstants.keyStoreAddress] ?? AppConstants.defaultStoreAddress,
+      'phone': settings[AppConstants.keyStorePhone] ?? AppConstants.defaultStorePhone,
     };
   }
 
@@ -27,8 +27,8 @@ class WhatsAppService {
       throw Exception('Nomor HP pelanggan tidak tersedia');
     }
 
-    final laundryInfo = await _getLaundryInfo();
-    final message = _buildReceiptMessage(order, laundryInfo);
+    final storeInfo = await _getStoreInfo();
+    final message = _buildReceiptMessage(order, storeInfo);
     final phoneNumber = order.whatsappNumber;
 
     if (phoneNumber.isEmpty) {
@@ -55,8 +55,8 @@ class WhatsAppService {
       throw Exception('Nomor HP pelanggan tidak tersedia');
     }
 
-    final laundryInfo = await _getLaundryInfo();
-    final message = _buildNotificationMessage(order, notificationType, laundryInfo);
+    final storeInfo = await _getStoreInfo();
+    final message = _buildNotificationMessage(order, notificationType, storeInfo);
     final phoneNumber = order.whatsappNumber;
 
     if (phoneNumber.isEmpty) {
@@ -77,13 +77,13 @@ class WhatsAppService {
     }
   }
 
-  String _buildReceiptMessage(Order order, Map<String, String> laundryInfo) {
+  String _buildReceiptMessage(Order order, Map<String, String> storeInfo) {
     final buffer = StringBuffer();
 
     // Header
-    buffer.writeln('*${laundryInfo['name']}*');
-    buffer.writeln(laundryInfo['address']);
-    buffer.writeln('Telp: ${laundryInfo['phone']}');
+    buffer.writeln('*${storeInfo['name']}*');
+    buffer.writeln(storeInfo['address']);
+    buffer.writeln('Telp: ${storeInfo['phone']}');
     buffer.writeln('================================');
     buffer.writeln();
 
@@ -96,7 +96,7 @@ class WhatsAppService {
     buffer.writeln();
 
     // Items
-    buffer.writeln('*Detail Layanan:*');
+    buffer.writeln('*Detail Order:*');
     buffer.writeln('--------------------------------');
     for (final item in order.items ?? []) {
       buffer.writeln('• ${item.serviceName}');
@@ -142,7 +142,7 @@ class WhatsAppService {
     return buffer.toString();
   }
 
-  String _buildNotificationMessage(Order order, String notificationType, Map<String, String> laundryInfo) {
+  String _buildNotificationMessage(Order order, String notificationType, Map<String, String> storeInfo) {
     final buffer = StringBuffer();
 
     buffer.writeln('Halo ${order.customerName},');
@@ -150,12 +150,12 @@ class WhatsAppService {
 
     switch (notificationType) {
       case 'ready':
-        buffer.writeln('🎉 *Laundry Anda sudah siap diambil!*');
+        buffer.writeln('🎉 *Pesanan Anda sudah siap diambil!*');
         buffer.writeln();
         buffer.writeln('No. Order: ${order.invoiceNumber}');
         buffer.writeln();
-        buffer.writeln('Silakan ambil laundry Anda di:');
-        buffer.writeln('📍 ${laundryInfo['address']}');
+        buffer.writeln('Silakan ambil pesanan Anda di:');
+        buffer.writeln('📍 ${storeInfo['address']}');
         if (order.remainingPayment > 0) {
           buffer.writeln();
           buffer.writeln('*Sisa pembayaran: ${CurrencyFormatter.format(order.remainingPayment)}*');
@@ -163,7 +163,7 @@ class WhatsAppService {
         break;
 
       case 'process':
-        buffer.writeln('⏳ *Laundry Anda sedang diproses*');
+        buffer.writeln('⏳ *Pesanan Anda sedang diproses*');
         buffer.writeln();
         buffer.writeln('No. Order: ${order.invoiceNumber}');
         if (order.dueDate != null) {
@@ -175,7 +175,7 @@ class WhatsAppService {
         buffer.writeln('✅ *Terima kasih!*');
         buffer.writeln();
         buffer.writeln('Order ${order.invoiceNumber} telah selesai.');
-        buffer.writeln('Terima kasih telah menggunakan jasa kami.');
+        buffer.writeln('Terima kasih telah berbelanja di tempat kami.');
         buffer.writeln();
         buffer.writeln('Sampai jumpa di kunjungan berikutnya! 🙏');
         break;
@@ -187,8 +187,8 @@ class WhatsAppService {
 
     buffer.writeln();
     buffer.writeln('---');
-    buffer.writeln('${laundryInfo['name']}');
-    buffer.writeln('Telp: ${laundryInfo['phone']}');
+    buffer.writeln('${storeInfo['name']}');
+    buffer.writeln('Telp: ${storeInfo['phone']}');
 
     return buffer.toString();
   }

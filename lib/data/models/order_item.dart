@@ -3,8 +3,9 @@ import 'package:equatable/equatable.dart';
 class OrderItem extends Equatable {
   final int? id;
   final int orderId;
-  final int? serviceId;
-  final String serviceName;
+  final int? serviceId; // Deprecated, kept for backward compatibility
+  final int? productId; // New field
+  final String serviceName; // Kept as name snapshot
   final double quantity;
   final String unit;
   final int pricePerUnit;
@@ -14,6 +15,7 @@ class OrderItem extends Equatable {
     this.id,
     required this.orderId,
     this.serviceId,
+    this.productId,
     required this.serviceName,
     required this.quantity,
     required this.unit,
@@ -26,6 +28,7 @@ class OrderItem extends Equatable {
       'id': id,
       'order_id': orderId,
       'service_id': serviceId,
+      'product_id': productId,
       'service_name': serviceName,
       'quantity': quantity,
       'unit': unit,
@@ -39,6 +42,7 @@ class OrderItem extends Equatable {
       id: map['id'] as int?,
       orderId: map['order_id'] as int,
       serviceId: map['service_id'] as int?,
+      productId: map['product_id'] as int?,
       serviceName: map['service_name'] as String,
       quantity: (map['quantity'] as num).toDouble(),
       unit: map['unit'] as String,
@@ -51,6 +55,7 @@ class OrderItem extends Equatable {
     int? id,
     int? orderId,
     int? serviceId,
+    int? productId,
     String? serviceName,
     double? quantity,
     String? unit,
@@ -61,6 +66,7 @@ class OrderItem extends Equatable {
       id: id ?? this.id,
       orderId: orderId ?? this.orderId,
       serviceId: serviceId ?? this.serviceId,
+      productId: productId ?? this.productId,
       serviceName: serviceName ?? this.serviceName,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
@@ -79,6 +85,7 @@ class OrderItem extends Equatable {
         id,
         orderId,
         serviceId,
+        productId,
         serviceName,
         quantity,
         unit,

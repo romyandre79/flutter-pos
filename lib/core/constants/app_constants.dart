@@ -2,23 +2,21 @@ class AppConstants {
   AppConstants._();
 
   // App Info
-  static const String appName = 'Laundry';
+  static const String appName = 'POS Offline';
   static const String appVersion = '1.0.0';
-  static const String appDescription = 'Aplikasi Kasir Laundry UMKM Indonesia - Full Offline, Jalan Tanpa Internet!';
+  static const String appDescription = 'Aplikasi Kasir POS Offline - Full Offline, Jalan Tanpa Internet!';
 
   // Database
-  static const String databaseName = 'laundryfull.db';
-  static const int databaseVersion = 2;
+  static const String databaseName = 'pos_offline.db';
+  static const int databaseVersion = 3;
 
   // Invoice
-  static const String defaultInvoicePrefix = 'LNDR';
-  static const int invoiceNumberLength = 4;
+  static const String defaultInvoicePrefix = 'POS';
+  static const int invoiceNumberLength = 6;
 
   // Default Values
-  static const int defaultServiceDuration = 3; // days
   static const String defaultPaymentMethod = 'cash';
-
-  // Pagination
+  static const int defaultServiceDuration = 1; // POS usually instant, but keep for compatibility
   static const int defaultPageSize = 20;
   static const int recentOrdersLimit = 5;
 
@@ -40,21 +38,23 @@ class AppConstants {
   static const int maxUsernameLength = 20;
 
   // Default Admin Credentials
-  static const String defaultOwnerUsername = 'owner';
-  static const String defaultOwnerPassword = 'admin123';
-  static const String defaultOwnerName = 'Owner Laundry';
+  static const String defaultOwnerUsername = 'admin';
+  static const String defaultOwnerPassword = 'admin';
+  static const String defaultOwnerName = 'Administrator';
 
   // Settings Keys
-  static const String keyLaundryName = 'laundry_name';
-  static const String keyLaundryAddress = 'laundry_address';
-  static const String keyLaundryPhone = 'laundry_phone';
+  static const String keyStoreName = 'store_name';
+  static const String keyStoreAddress = 'store_address';
+  static const String keyStorePhone = 'store_phone';
   static const String keyInvoicePrefix = 'invoice_prefix';
   static const String keyPrinterAddress = 'printer_address';
   static const String keyLastInvoiceDate = 'last_invoice_date';
   static const String keyLastInvoiceNumber = 'last_invoice_number';
 
-  // Default Laundry Info
-  static const String defaultLaundryName = 'Laundry';
-  static const String defaultLaundryAddress = 'Jalan Palagan Jago Flutter, Sleman, DIY';
-  static const String defaultLaundryPhone = '6285640899224';
+  // Default Store Info
+  static const String defaultStoreName = 'Toko Serba Ada';
+  static const String defaultStoreAddress = 'Indonesia';
+  static const String defaultStorePhone = '-';
+
+
 }

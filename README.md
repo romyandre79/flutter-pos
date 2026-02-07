@@ -277,7 +277,7 @@ flutter pub run change_app_package_name:main com.yourcompany.yourapp
 ```
 
 ### App Icon
-Logo: `assets/icons/logolaundry.png`
+Logo: `assets/icons/logopos.png`
 
 Regenerate icons:
 ```bash

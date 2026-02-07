@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter_laundry_offline_app/data/models/user.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
 
 abstract class AuthState extends Equatable {
   const AuthState();

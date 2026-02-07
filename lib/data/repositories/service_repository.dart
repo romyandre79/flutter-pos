@@ -1,5 +1,5 @@
-import 'package:flutter_laundry_offline_app/data/database/database_helper.dart';
-import 'package:flutter_laundry_offline_app/data/models/service.dart';
+import 'package:flutter_pos_offline/data/database/database_helper.dart';
+import 'package:flutter_pos_offline/data/models/service.dart';
 
 class ServiceRepository {
   final DatabaseHelper _databaseHelper;

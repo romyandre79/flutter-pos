@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
-import 'package:flutter_laundry_offline_app/core/utils/thousand_separator_formatter.dart';
-import 'package:flutter_laundry_offline_app/data/models/service.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/service/service_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/service/service_state.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/core/utils/thousand_separator_formatter.dart';
+import 'package:flutter_pos_offline/data/models/service.dart';
+import 'package:flutter_pos_offline/logic/cubits/service/service_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/service/service_state.dart';
 
 class ServiceFormScreen extends StatefulWidget {
   final Service? service;
@@ -214,7 +214,7 @@ class _ServiceFormScreenState extends State<ServiceFormScreen> {
           ],
         ),
         child: const Icon(
-          Icons.local_laundry_service,
+          Icons.category,
           color: Colors.white,
           size: 40,
         ),
@@ -266,7 +266,7 @@ class _ServiceFormScreenState extends State<ServiceFormScreen> {
             textInputAction: TextInputAction.next,
             decoration: _buildInputDecoration(
               hintText: 'Contoh: Cuci Setrika',
-              prefixIcon: Icons.local_laundry_service,
+              prefixIcon: Icons.label_outline,
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {

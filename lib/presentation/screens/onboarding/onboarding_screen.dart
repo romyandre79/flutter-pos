@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -21,15 +21,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   final List<OnboardingData> _pages = [
     OnboardingData(
-      icon: Icons.local_laundry_service,
+      icon: Icons.store,
       title: 'Selamat Datang!',
-      subtitle: 'Laundry',
+      subtitle: 'Aplikasi Kasir',
       description:
-          'Aplikasi kasir laundry modern untuk UMKM Indonesia.\nKelola bisnis laundry Anda dengan mudah, cepat, dan profesional.',
+          'Aplikasi kasir modern untuk UMKM Indonesia.\nKelola bisnis Anda dengan mudah, cepat, dan profesional.',
       gradient: const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFFAB5DC4), Color(0xFF7B2D8E), Color(0xFF5A1D6B)],
+        colors: [
+          AppThemeColors.primaryLight,
+          AppThemeColors.primary,
+          AppThemeColors.primaryDark
+        ],
       ),
     ),
     OnboardingData(
@@ -41,7 +45,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       gradient: const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFF9B4DB0), Color(0xFF7B2D8E), Color(0xFF4A1A5E)],
+        colors: [
+          AppThemeColors.primaryLight,
+          AppThemeColors.primary,
+          AppThemeColors.primaryDark
+        ],
       ),
     ),
     OnboardingData(
@@ -53,7 +61,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       gradient: const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFFB86FCC), Color(0xFF8B3FA0), Color(0xFF5A1D6B)],
+        colors: [
+          AppThemeColors.primaryLight,
+          AppThemeColors.primary,
+          AppThemeColors.primaryDark
+        ],
       ),
     ),
   ];
@@ -393,7 +405,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         ],
       ),
       child: Image.asset(
-        'assets/icons/logolaundry.png',
+        'assets/icons/logopos.png',
         fit: BoxFit.contain,
       ),
     );

@@ -4,14 +4,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
-import 'package:flutter_laundry_offline_app/core/utils/date_formatter.dart';
-import 'package:flutter_laundry_offline_app/data/database/database_helper.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/auth/login_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/main_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/onboarding/onboarding_screen.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
+import 'package:flutter_pos_offline/data/database/database_helper.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/presentation/screens/auth/login_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/main_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/onboarding/onboarding_screen.dart';
+import 'package:flutter_pos_offline/data/repositories/auth_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/order_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/report_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/service_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/user_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
+import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,13 +60,37 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [BlocProvider(create: (_) => AuthCubit()..checkAuthStatus())],
-      child: MaterialApp(
-        title: 'Laundry',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        home: AuthWrapper(showOnboarding: showOnboarding),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider(create: (_) => AuthRepository()),
+        RepositoryProvider(create: (_) => ServiceRepository()),
+        RepositoryProvider(create: (_) => OrderRepository()),
+        RepositoryProvider(create: (_) => CustomerRepository()),
+        RepositoryProvider(create: (_) => ReportRepository()),
+        RepositoryProvider(create: (_) => UserRepository()),
+        RepositoryProvider(create: (_) => SupplierRepository()),
+        RepositoryProvider(create: (_) => PurchaseOrderRepository()),
+        RepositoryProvider(create: (_) => ProductRepository()),         
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => AuthCubit(
+              authRepository: context.read<AuthRepository>(),
+            )..checkAuthStatus(),
+          ),
+          BlocProvider(
+            create: (context) => OrderCubit(
+              orderRepository: context.read<OrderRepository>(),
+            )..loadOrders(),
+          ),
+        ],
+        child: MaterialApp(
+          title: 'POS Offline',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          home: AuthWrapper(showOnboarding: showOnboarding),
+        ),
       ),
     );
   }
@@ -115,7 +149,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                       boxShadow: AppShadows.medium,
                     ),
                     child: Image.asset(
-                      'assets/icons/logolaundry.png',
+                      'assets/icons/logopos.png',
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -131,7 +165,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
         // Show main screen if authenticated
         if (state is AuthAuthenticated) {
-          return const MainScreen();
+          return MainScreen();
         }
 
         // Show login screen if not authenticated

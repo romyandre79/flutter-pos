@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
-import 'package:flutter_laundry_offline_app/core/utils/currency_formatter.dart';
-import 'package:flutter_laundry_offline_app/core/utils/date_formatter.dart';
-import 'package:flutter_laundry_offline_app/core/utils/thousand_separator_formatter.dart';
-import 'package:flutter_laundry_offline_app/data/models/order.dart';
-import 'package:flutter_laundry_offline_app/data/models/payment.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/order/order_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/printer/printer_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/printer/printer_state.dart';
-import 'package:flutter_laundry_offline_app/core/services/whatsapp_service.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
+import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
+import 'package:flutter_pos_offline/core/utils/thousand_separator_formatter.dart';
+import 'package:flutter_pos_offline/data/models/order.dart';
+import 'package:flutter_pos_offline/data/models/payment.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/order/order_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/printer/printer_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/printer/printer_state.dart';
+import 'package:flutter_pos_offline/core/services/whatsapp_service.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final int orderId;
@@ -220,7 +220,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 icon: Icons.notifications_active,
                 color: AppThemeColors.success,
                 title: 'Notifikasi Siap Ambil',
-                subtitle: 'Beritahu pelanggan laundry sudah siap',
+                subtitle: 'Beritahu pelanggan pesanan sudah siap',
                 onTap: () async {
                   Navigator.pop(bottomContext);
                   try {
@@ -242,7 +242,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 icon: Icons.hourglass_empty,
                 color: AppThemeColors.warning,
                 title: 'Notifikasi Proses',
-                subtitle: 'Beritahu pelanggan laundry sedang diproses',
+                subtitle: 'Beritahu pelanggan pesanan sedang diproses',
                 onTap: () async {
                   Navigator.pop(bottomContext);
                   try {
@@ -1170,7 +1170,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             borderRadius: AppRadius.smRadius,
                           ),
                           child: const Icon(
-                            Icons.local_laundry_service,
+                            Icons.category,
                             color: AppThemeColors.primary,
                             size: 18,
                           ),

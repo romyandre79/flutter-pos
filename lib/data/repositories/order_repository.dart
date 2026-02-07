@@ -1,8 +1,8 @@
-import 'package:flutter_laundry_offline_app/data/database/database_helper.dart';
-import 'package:flutter_laundry_offline_app/data/models/order.dart';
-import 'package:flutter_laundry_offline_app/data/models/order_item.dart';
-import 'package:flutter_laundry_offline_app/data/models/payment.dart';
-import 'package:flutter_laundry_offline_app/data/repositories/customer_repository.dart';
+import 'package:flutter_pos_offline/data/database/database_helper.dart';
+import 'package:flutter_pos_offline/data/models/order.dart';
+import 'package:flutter_pos_offline/data/models/order_item.dart';
+import 'package:flutter_pos_offline/data/models/payment.dart';
+import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 
 class OrderRepository {
   final DatabaseHelper _databaseHelper;
@@ -125,6 +125,7 @@ class OrderRepository {
         await txn.insert('order_items', {
           'order_id': orderId,
           'service_id': item.serviceId,
+          'product_id': item.productId,
           'service_name': item.serviceName,
           'quantity': item.quantity,
           'unit': item.unit,

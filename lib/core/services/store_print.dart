@@ -1,26 +1,26 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
-import 'package:flutter_laundry_offline_app/data/models/order.dart';
-import 'package:flutter_laundry_offline_app/data/repositories/settings_repository.dart';
-import 'package:flutter_laundry_offline_app/core/utils/currency_formatter.dart';
-import 'package:flutter_laundry_offline_app/core/utils/date_formatter.dart';
-import 'package:flutter_laundry_offline_app/core/constants/app_constants.dart';
+import 'package:flutter_pos_offline/data/models/order.dart';
+import 'package:flutter_pos_offline/data/repositories/settings_repository.dart';
+import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
+import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
+import 'package:flutter_pos_offline/core/constants/app_constants.dart';
 
-class LaundryPrint {
-  LaundryPrint._init();
+class StorePrint {
+  StorePrint._init();
 
-  static final LaundryPrint instance = LaundryPrint._init();
+  static final StorePrint instance = StorePrint._init();
 
   final SettingsRepository _settingsRepository = SettingsRepository();
 
-  Future<Map<String, String>> _getLaundryInfo() async {
+  Future<Map<String, String>> _getStoreInfo() async {
     final settings = await _settingsRepository.getAllSettings();
     return {
-      'name': settings[AppConstants.keyLaundryName] ??
-          AppConstants.defaultLaundryName,
-      'address': settings[AppConstants.keyLaundryAddress] ??
-          AppConstants.defaultLaundryAddress,
-      'phone': settings[AppConstants.keyLaundryPhone] ??
-          AppConstants.defaultLaundryPhone,
+      'name': settings[AppConstants.keyStoreName] ??
+          AppConstants.defaultStoreName,
+      'address': settings[AppConstants.keyStoreAddress] ??
+          AppConstants.defaultStoreAddress,
+      'phone': settings[AppConstants.keyStorePhone] ??
+          AppConstants.defaultStorePhone,
     };
   }
 
@@ -38,8 +38,8 @@ class LaundryPrint {
     final profile = await CapabilityProfile.load();
     final generator = Generator(paperSize, profile);
 
-    // Get laundry info from settings
-    final laundryInfo = await _getLaundryInfo();
+    // Get store info from settings
+    final storeInfo = await _getStoreInfo();
 
     // Define separator based on paper size
     final String separator = paperSizeMm == '80'
@@ -50,7 +50,7 @@ class LaundryPrint {
 
     // ========== HEADER ==========
     bytes += generator.text(
-      laundryInfo['name'] ?? 'Laundry',
+      storeInfo['name'] ?? 'Toko',
       styles: const PosStyles(
         bold: true,
         align: PosAlign.center,
@@ -60,7 +60,7 @@ class LaundryPrint {
     );
 
     bytes += generator.text(
-      laundryInfo['address'] ?? '',
+      storeInfo['address'] ?? '',
       styles: const PosStyles(
         bold: false,
         align: PosAlign.center,
@@ -68,7 +68,7 @@ class LaundryPrint {
     );
 
     bytes += generator.text(
-      'Telp: ${laundryInfo['phone'] ?? '-'}',
+      'Telp: ${storeInfo['phone'] ?? '-'}',
       styles: const PosStyles(
         bold: false,
         align: PosAlign.center,
@@ -359,8 +359,8 @@ class LaundryPrint {
     final profile = await CapabilityProfile.load();
     final generator = Generator(paperSize, profile);
 
-    // Get laundry info from settings
-    final laundryInfo = await _getLaundryInfo();
+    // Get store info from settings
+    final storeInfo = await _getStoreInfo();
 
     final String separator = paperSizeMm == '80'
         ? '------------------------------------------------'
@@ -370,7 +370,7 @@ class LaundryPrint {
 
     // Header
     bytes += generator.text(
-      laundryInfo['name'] ?? 'Laundry',
+      storeInfo['name'] ?? 'Toko',
       styles: const PosStyles(
         bold: true,
         align: PosAlign.center,

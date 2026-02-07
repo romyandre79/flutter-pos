@@ -1,0 +1,55 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_pos_offline/data/models/supplier.dart';
+import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_state.dart';
+
+class SupplierCubit extends Cubit<SupplierState> {
+  final SupplierRepository _supplierRepository;
+
+  SupplierCubit({required SupplierRepository supplierRepository})
+      : _supplierRepository = supplierRepository,
+        super(SupplierInitial());
+
+  Future<void> loadSuppliers() async {
+    try {
+      emit(SupplierLoading());
+      final suppliers = await _supplierRepository.getAllSuppliers();
+      emit(SupplierLoaded(suppliers));
+    } catch (e) {
+      emit(SupplierError('Failed to load suppliers: ${e.toString()}'));
+    }
+  }
+
+  Future<void> addSupplier(Supplier supplier) async {
+    try {
+      emit(SupplierLoading());
+      await _supplierRepository.createSupplier(supplier);
+      emit(const SupplierOperationSuccess('Supplier added successfully'));
+      loadSuppliers(); // Reload list
+    } catch (e) {
+      emit(SupplierError('Failed to add supplier: ${e.toString()}'));
+    }
+  }
+
+  Future<void> updateSupplier(Supplier supplier) async {
+    try {
+      emit(SupplierLoading());
+      await _supplierRepository.updateSupplier(supplier);
+      emit(const SupplierOperationSuccess('Supplier updated successfully'));
+      loadSuppliers(); // Reload list
+    } catch (e) {
+      emit(SupplierError('Failed to update supplier: ${e.toString()}'));
+    }
+  }
+
+  Future<void> deleteSupplier(int id) async {
+    try {
+      emit(SupplierLoading());
+      await _supplierRepository.deleteSupplier(id);
+      emit(const SupplierOperationSuccess('Supplier deleted successfully'));
+      loadSuppliers(); // Reload list
+    } catch (e) {
+      emit(SupplierError('Failed to delete supplier: ${e.toString()}'));
+    }
+  }
+}

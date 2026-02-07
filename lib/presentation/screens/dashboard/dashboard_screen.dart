@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
-import 'package:flutter_laundry_offline_app/core/utils/currency_formatter.dart';
-import 'package:flutter_laundry_offline_app/data/models/order.dart';
-import 'package:flutter_laundry_offline_app/data/models/user.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/customer/customer_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/dashboard/dashboard_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/dashboard/dashboard_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/service/service_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/printer/printer_cubit.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/orders/order_form_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/orders/order_detail_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/orders/order_list_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/services/service_list_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/settings/printer_settings_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/widgets/order_card.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
+import 'package:flutter_pos_offline/data/models/order.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/dashboard/dashboard_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/dashboard/dashboard_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/service/service_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/printer/printer_cubit.dart';
+import 'package:flutter_pos_offline/presentation/screens/orders/order_form_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/orders/order_detail_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/orders/order_list_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/services/service_list_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/settings/printer_settings_screen.dart';
+import 'package:flutter_pos_offline/presentation/widgets/order_card.dart';
+import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
+import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
+import 'package:flutter_pos_offline/presentation/screens/products/product_list_screen.dart';
+import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
+import 'package:flutter_pos_offline/presentation/screens/pos/pos_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -287,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: _buildHeaderStatCard(
                       icon: Icons.receipt_long_outlined,
-                      label: 'Order Bulan Ini',
+                      label: 'Penjualan Bulan Ini',
                       value: monthOrders.toString(),
                     ),
                   ),
@@ -359,20 +364,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Expanded(
               child: _buildQuickActionItem(
-                icon: Icons.add_circle,
-                label: 'Order Baru',
+                icon: Icons.point_of_sale,
+                label: 'Kasir',
                 color: AppThemeColors.primary,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => MultiBlocProvider(
-                        providers: [
-                          BlocProvider(create: (_) => ServiceCubit()..loadServices()),
-                          BlocProvider(create: (_) => CustomerCubit()..loadCustomers()),
-                          BlocProvider.value(value: context.read<OrderCubit>()),
-                        ],
-                        child: const OrderFormScreen(),
+                      builder: (_) => BlocProvider(
+                        create: (context) => PosCubit(context.read<ProductRepository>())..loadProducts(),
+                        child: PosScreen(),
                       ),
                     ),
                   ).then((_) => _dashboardCubit.loadDashboard());
@@ -382,16 +383,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: _buildQuickActionItem(
-                icon: Icons.local_laundry_service,
-                label: 'Layanan',
+                icon: Icons.category,
+                label: 'Master Item',
                 color: AppThemeColors.primary,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => BlocProvider(
-                        create: (_) => ServiceCubit()..loadServices(),
-                        child: const ServiceListScreen(),
+                        create: (context) => ProductCubit(context.read<ProductRepository>()),
+                        child: const ProductListScreen(),
                       ),
                     ),
                   );
@@ -486,48 +487,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Status Order Hari Ini',
-          style: AppTypography.titleMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: AppRadius.lgRadius,
-            boxShadow: AppShadows.small,
-          ),
-          child: Row(
-            children: [
-              _buildStatusItem(
-                'Pending',
-                counts[OrderStatus.pending] ?? 0,
-                AppThemeColors.warning,
-              ),
-              _buildStatusDivider(),
-              _buildStatusItem(
-                'Proses',
-                counts[OrderStatus.process] ?? 0,
-                AppThemeColors.primary,
-              ),
-              _buildStatusDivider(),
-              _buildStatusItem(
-                'Siap',
-                counts[OrderStatus.ready] ?? 0,
-                AppThemeColors.success,
-              ),
-              _buildStatusDivider(),
-              _buildStatusItem(
-                'Selesai',
-                counts[OrderStatus.done] ?? 0,
-                AppThemeColors.completed,
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -588,7 +547,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Order Terbaru',
+              'Penjualan Terbaru',
               style: AppTypography.titleMedium.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -645,7 +604,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  'Belum ada order hari ini',
+                  'Belum ada penjualan hari ini',
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppThemeColors.textSecondary,
                   ),

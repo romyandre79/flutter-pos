@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter_laundry_offline_app/data/models/order_item.dart';
-import 'package:flutter_laundry_offline_app/data/models/payment.dart';
+import 'package:flutter_pos_offline/data/models/order_item.dart';
+import 'package:flutter_pos_offline/data/models/payment.dart';
 
 enum OrderStatus { pending, process, ready, done }
 

@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_laundry_offline_app/core/constants/app_constants.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
-import 'package:flutter_laundry_offline_app/data/models/user.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/settings/settings_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/settings/settings_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/user/user_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/service/service_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/customer/customer_cubit.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/settings/user_management_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/services/service_list_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/customers/customer_list_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/settings/printer_settings_screen.dart';
+
+import 'package:flutter_pos_offline/core/constants/app_constants.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/settings/settings_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/settings/settings_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/user/user_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
+import 'package:flutter_pos_offline/presentation/screens/settings/user_management_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/settings/printer_settings_screen.dart';
+import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
+import 'package:flutter_pos_offline/presentation/screens/products/product_list_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/customers/customer_list_screen.dart';
+import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -350,14 +351,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: BlocBuilder<SettingsCubit, SettingsState>(
                     bloc: _settingsCubit,
                     builder: (context, settingsState) {
-                      // Get laundry info from state
-                      LaundryInfo? laundryInfo;
+                      // Get store info from state
+                      StoreInfo? storeInfo;
                       if (settingsState is SettingsLoaded) {
-                        laundryInfo = settingsState.laundryInfo;
+                        storeInfo = settingsState.storeInfo;
                       } else if (settingsState is SettingsUpdated) {
-                        laundryInfo = settingsState.laundryInfo;
+                        storeInfo = settingsState.storeInfo;
                       } else {
-                        laundryInfo = _settingsCubit.currentInfo;
+                        storeInfo = _settingsCubit.currentInfo;
                       }
 
                       return ListView(
@@ -365,26 +366,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           const SizedBox(height: AppSpacing.lg),
 
-                          // Laundry Info Section
+                          // Store Info Section
                           _buildSection(
-                            title: 'Informasi Laundry',
+                            title: 'Informasi Toko',
                             children: [
                               _buildSettingTile(
                                 context: context,
                                 icon: Icons.store,
-                                title: 'Nama Laundry',
+                                title: 'Nama Toko',
                                 subtitle:
-                                    laundryInfo?.name ??
-                                    AppConstants.defaultLaundryName,
+                                    storeInfo?.name ??
+                                    AppConstants.defaultStoreName,
                                 onTap: () => _showEditDialog(
-                                  title: 'Edit Nama Laundry',
+                                  title: 'Edit Nama Toko',
                                   currentValue:
-                                      laundryInfo?.name ??
-                                      AppConstants.defaultLaundryName,
-                                  hint: 'Masukkan nama laundry',
+                                      storeInfo?.name ??
+                                      AppConstants.defaultStoreName,
+                                  hint: 'Masukkan nama toko',
                                   icon: Icons.store,
                                   onSave: (value) =>
-                                      _settingsCubit.updateLaundryName(value),
+                                      _settingsCubit.updateStoreName(value),
                                 ),
                               ),
                               _buildDivider(),
@@ -393,18 +394,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 icon: Icons.location_on,
                                 title: 'Alamat',
                                 subtitle:
-                                    laundryInfo?.address ??
-                                    AppConstants.defaultLaundryAddress,
+                                    storeInfo?.address ??
+                                    AppConstants.defaultStoreAddress,
                                 onTap: () => _showEditDialog(
                                   title: 'Edit Alamat',
                                   currentValue:
-                                      laundryInfo?.address ??
-                                      AppConstants.defaultLaundryAddress,
-                                  hint: 'Masukkan alamat laundry',
+                                      storeInfo?.address ??
+                                      AppConstants.defaultStoreAddress,
+                                  hint: 'Masukkan alamat toko',
                                   icon: Icons.location_on,
                                   maxLines: 2,
                                   onSave: (value) => _settingsCubit
-                                      .updateLaundryAddress(value),
+                                      .updateStoreAddress(value),
                                 ),
                               ),
                               _buildDivider(),
@@ -413,18 +414,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 icon: Icons.phone,
                                 title: 'Nomor HP',
                                 subtitle:
-                                    laundryInfo?.phone ??
-                                    AppConstants.defaultLaundryPhone,
+                                    storeInfo?.phone ??
+                                    AppConstants.defaultStorePhone,
                                 onTap: () => _showEditDialog(
                                   title: 'Edit Nomor HP',
                                   currentValue:
-                                      laundryInfo?.phone ??
-                                      AppConstants.defaultLaundryPhone,
+                                      storeInfo?.phone ??
+                                      AppConstants.defaultStorePhone,
                                   hint: 'Masukkan nomor HP',
                                   icon: Icons.phone,
                                   keyboardType: TextInputType.phone,
                                   onSave: (value) =>
-                                      _settingsCubit.updateLaundryPhone(value),
+                                      _settingsCubit.updateStorePhone(value),
                                 ),
                               ),
                             ],
@@ -434,18 +435,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _buildSection(
                             title: 'Layanan',
                             children: [
-                              _buildSettingTile(
+                                _buildSettingTile(
                                 context: context,
-                                icon: Icons.local_laundry_service,
-                                title: 'Paket Layanan',
-                                subtitle: 'Kelola paket layanan laundry',
+                                icon: Icons.category,
+                                title: 'Master Item',
+                                subtitle: 'Kelola produk dan layanan',
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => BlocProvider(
-                                        create: (_) => ServiceCubit(),
-                                        child: const ServiceListScreen(),
+                                        create: (context) => ProductCubit(
+                                          context.read<ProductRepository>(),
+                                        ),
+                                        child: const ProductListScreen(),
                                       ),
                                     ),
                                   );
@@ -469,7 +472,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     MaterialPageRoute(
                                       builder: (_) => BlocProvider(
                                         create: (_) => CustomerCubit(),
-                                        child: const CustomerListScreen(),
+                                        child: CustomerListScreen(),
                                       ),
                                     ),
                                   );
@@ -487,12 +490,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 icon: Icons.receipt,
                                 title: 'Prefix Invoice',
                                 subtitle:
-                                    laundryInfo?.invoicePrefix ??
+                                    storeInfo?.invoicePrefix ??
                                     AppConstants.defaultInvoicePrefix,
                                 onTap: () => _showEditDialog(
                                   title: 'Edit Prefix Invoice',
                                   currentValue:
-                                      laundryInfo?.invoicePrefix ??
+                                      storeInfo?.invoicePrefix ??
                                       AppConstants.defaultInvoicePrefix,
                                   hint: 'Masukkan prefix (maks 10 karakter)',
                                   icon: Icons.receipt,
@@ -844,46 +847,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildExperienceItem(String year, String role, String company) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 6),
-            decoration: BoxDecoration(
-              color: AppThemeColors.primary,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$role - $company',
-                  style: AppTypography.bodySmall.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: AppThemeColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  year,
-                  style: AppTypography.labelSmall.copyWith(
-                    color: AppThemeColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
 
 }

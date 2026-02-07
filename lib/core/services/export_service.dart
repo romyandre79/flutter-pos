@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams, XFile;
-import 'package:flutter_laundry_offline_app/data/models/order.dart';
-import 'package:flutter_laundry_offline_app/core/utils/currency_formatter.dart';
-import 'package:flutter_laundry_offline_app/core/utils/date_formatter.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/report/report_state.dart';
+import 'package:flutter_pos_offline/data/models/order.dart';
+import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
+import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
+import 'package:flutter_pos_offline/logic/cubits/report/report_state.dart';
 
 class ExportService {
   static final ExportService _instance = ExportService._internal();
@@ -51,7 +51,7 @@ class ExportService {
     final sheet = excel['Ringkasan'];
 
     // Title
-    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('LAPORAN LAUNDRY');
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('LAPORAN TRANSAKSI');
     sheet.cell(CellIndex.indexByString('A2')).value = TextCellValue(
         'Periode: ${DateFormatter.formatDate(reportData.startDate)} - ${DateFormatter.formatDate(reportData.endDate)}');
 
@@ -156,7 +156,7 @@ class ExportService {
   /// Share exported file
   Future<void> shareFile(String filePath) async {
     await SharePlus.instance.share(
-      ShareParams(files: [XFile(filePath)], text: 'Laporan Laundry'),
+      ShareParams(files: [XFile(filePath)], text: 'Laporan Transaksi'),
     );
   }
 }

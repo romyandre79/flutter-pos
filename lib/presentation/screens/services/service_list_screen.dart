@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
-import 'package:flutter_laundry_offline_app/core/utils/currency_formatter.dart';
-import 'package:flutter_laundry_offline_app/data/models/service.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/service/service_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/service/service_state.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/services/service_form_screen.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
+import 'package:flutter_pos_offline/data/models/service.dart';
+import 'package:flutter_pos_offline/logic/cubits/service/service_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/service/service_state.dart';
+import 'package:flutter_pos_offline/presentation/screens/services/service_form_screen.dart';
 
 class ServiceListScreen extends StatefulWidget {
   const ServiceListScreen({super.key});
@@ -224,7 +224,7 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.local_laundry_service_outlined,
+                Icons.category_outlined,
                 size: 40,
                 color: AppThemeColors.primary.withValues(alpha: 0.5),
               ),
@@ -238,7 +238,7 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Tambahkan paket layanan laundry Anda',
+              'Tambahkan paket layanan Anda',
               style: AppTypography.bodySmall.copyWith(
                 color: AppThemeColors.textSecondary,
               ),
@@ -305,7 +305,7 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                     borderRadius: AppRadius.mdRadius,
                   ),
                   child: const Icon(
-                    Icons.local_laundry_service,
+                    Icons.category,
                     color: AppThemeColors.primary,
                     size: 28,
                   ),

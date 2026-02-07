@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
-import 'package:flutter_laundry_offline_app/data/models/user.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/user/user_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/report/report_cubit.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/dashboard/dashboard_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/orders/order_list_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/reports/report_screen.dart';
-import 'package:flutter_laundry_offline_app/presentation/screens/settings/settings_screen.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/user/user_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/report/report_cubit.dart';
+import 'package:flutter_pos_offline/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/orders/order_list_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/reports/report_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/settings/settings_screen.dart';
+import 'package:flutter_pos_offline/presentation/screens/pos/pos_screen.dart';
+import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
+import 'package:flutter_pos_offline/data/repositories/service_repository.dart';
+import 'package:flutter_pos_offline/presentation/screens/purchasing/supplier_list_screen.dart';
+import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
+import 'package:flutter_pos_offline/presentation/screens/purchasing/purchase_order_list_screen.dart';
+import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_cubit.dart';
+import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -55,15 +65,33 @@ class _MainScreenState extends State<MainScreen> {
             activeIcon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
-          ),
         ];
 
-        // Only owner can access reports
         if (isOwner) {
+          navItems.add(
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.point_of_sale_outlined),
+              activeIcon: Icon(Icons.point_of_sale),
+              label: 'Kasir',
+            ),
+          );
+
+          navItems.add(
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline),
+              activeIcon: Icon(Icons.people),
+              label: 'Suppliers',
+            ),
+          );
+
+          navItems.add(
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_bag_outlined),
+              activeIcon: Icon(Icons.shopping_bag),
+              label: 'Purchasing',
+            ),
+          );
+
           navItems.add(
             const BottomNavigationBarItem(
               icon: Icon(Icons.analytics_outlined),
@@ -90,13 +118,47 @@ class _MainScreenState extends State<MainScreen> {
             value: _orderCubit,
             child: const DashboardScreen(),
           ),
-          BlocProvider.value(
-            value: _orderCubit,
-            child: const OrderListScreen(),
-          ),
         ];
 
         if (isOwner) {
+           // Add POS Screen
+           screens.add(
+            BlocProvider(
+              create: (context) => PosCubit(context.read<ProductRepository>())..loadProducts(),
+              child: PosScreen(), // Removed const
+            ),
+          );
+
+          // Add Supplier Screen
+          screens.add(
+            BlocProvider(
+              create: (context) => SupplierCubit(
+                supplierRepository: context.read<SupplierRepository>(),
+              )..loadSuppliers(),
+              child: const SupplierListScreen(),
+            ),
+          );
+
+          // Add Purchase Order Screen
+          screens.add(
+            MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (context) => PurchaseOrderCubit(
+                    repository: context.read<PurchaseOrderRepository>(),
+                  )..loadPurchaseOrders(),
+                ),
+                // We also need SupplierCubit available for the Create Screen which is pushed from here
+                BlocProvider(
+                  create: (context) => SupplierCubit(
+                   supplierRepository: context.read<SupplierRepository>(),
+                  ),
+                ),
+              ],
+              child: const PurchaseOrderListScreen(),
+            ),
+          );
+          
           screens.add(
             BlocProvider(
               create: (_) => ReportCubit(),

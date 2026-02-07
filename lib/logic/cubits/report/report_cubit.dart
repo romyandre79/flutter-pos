@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_laundry_offline_app/data/repositories/report_repository.dart';
-import 'package:flutter_laundry_offline_app/core/services/export_service.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/report/report_state.dart';
+import 'package:flutter_pos_offline/data/repositories/report_repository.dart';
+import 'package:flutter_pos_offline/core/services/export_service.dart';
+import 'package:flutter_pos_offline/logic/cubits/report/report_state.dart';
 
 class ReportCubit extends Cubit<ReportState> {
   final ReportRepository _reportRepository;

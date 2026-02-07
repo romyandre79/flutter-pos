@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_laundry_offline_app/core/constants/colors.dart';
-import 'package:flutter_laundry_offline_app/core/theme/app_theme.dart';
-import 'package:flutter_laundry_offline_app/core/utils/currency_formatter.dart';
-import 'package:flutter_laundry_offline_app/core/utils/thousand_separator_formatter.dart';
-import 'package:flutter_laundry_offline_app/data/models/customer.dart';
-import 'package:flutter_laundry_offline_app/data/models/order_item.dart';
-import 'package:flutter_laundry_offline_app/data/models/payment.dart';
-import 'package:flutter_laundry_offline_app/data/models/service.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/customer/customer_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/customer/customer_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/order/order_state.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/service/service_cubit.dart';
-import 'package:flutter_laundry_offline_app/logic/cubits/service/service_state.dart';
+import 'package:flutter_pos_offline/core/constants/colors.dart';
+import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
+import 'package:flutter_pos_offline/core/utils/thousand_separator_formatter.dart';
+import 'package:flutter_pos_offline/data/models/customer.dart';
+import 'package:flutter_pos_offline/data/models/order_item.dart';
+import 'package:flutter_pos_offline/data/models/payment.dart';
+import 'package:flutter_pos_offline/data/models/product.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/customer/customer_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/order/order_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/product/product_state.dart';
 
 class OrderFormScreen extends StatefulWidget {
   const OrderFormScreen({super.key});
@@ -42,8 +42,18 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // Order items
   final List<_OrderItemEntry> _items = [];
 
+  // Filter for products
+  int _selectedTab = 0; // 0: All, 1: Services, 2: Goods
+
   int get _totalPrice {
     return _items.fold(0, (sum, item) => sum + item.subtotal);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Load products when screen opens
+    context.read<ProductCubit>().loadProducts();
   }
 
   @override
@@ -55,15 +65,15 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     super.dispose();
   }
 
-  void _toggleItem(Service service) {
+  void _toggleItem(Product product) {
     setState(() {
-      final existing = _items.indexWhere((e) => e.service.id == service.id);
+      final existing = _items.indexWhere((e) => e.product.id == product.id);
       if (existing >= 0) {
         // Sudah ada, hapus dari list
         _items.removeAt(existing);
       } else {
         // Belum ada, tambahkan
-        _items.add(_OrderItemEntry(service: service));
+        _items.add(_OrderItemEntry(product: product));
       }
     });
   }
@@ -82,7 +92,9 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   }
 
   void _showQuantityInputDialog(int index, _OrderItemEntry item) {
-    final isKg = item.service.unit == ServiceUnit.kg;
+    // For services/goods with unit 'kg', allow decimals. For 'pcs' etc, likely integer.
+    // Simplifying logic: if unit is 'kg', allow decimal.
+    final isDecimal = item.product.unit.toLowerCase() == 'kg';
     final controller = TextEditingController(text: item.quantityDisplay);
 
     showDialog(
@@ -98,7 +110,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              item.service.name,
+              item.product.name,
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 color: AppThemeColors.textSecondary,
@@ -108,12 +120,12 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
             TextField(
               controller: controller,
               autofocus: true,
-              keyboardType: isKg
+              keyboardType: isDecimal
                   ? const TextInputType.numberWithOptions(decimal: true)
                   : TextInputType.number,
               decoration: InputDecoration(
-                suffixText: item.service.unit.value,
-                hintText: isKg ? 'Contoh: 1.5' : 'Contoh: 3',
+                suffixText: item.product.unit,
+                hintText: isDecimal ? 'Contoh: 1.5' : 'Contoh: 3',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -122,7 +134,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                 _submitQuantityInput(dialogContext, controller.text, index, item);
               },
             ),
-            if (isKg)
+            if (isDecimal)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
@@ -165,7 +177,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 
   void _submitQuantityInput(
       BuildContext dialogContext, String input, int index, _OrderItemEntry item) {
-    final isKg = item.service.unit == ServiceUnit.kg;
+    final isDecimal = item.product.unit.toLowerCase() == 'kg';
     // Replace comma with dot for decimal parsing
     final normalizedInput = input.replaceAll(',', '.');
     final parsed = double.tryParse(normalizedInput);
@@ -181,11 +193,11 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     }
 
     double finalQuantity;
-    if (isKg) {
-      // For kg: allow decimal, round to 1 decimal place
-      finalQuantity = double.parse(parsed.toStringAsFixed(1));
+    if (isDecimal) {
+      // For decimal supported units: allow decimal, round to 2 decimal places if needed
+      finalQuantity = double.parse(parsed.toStringAsFixed(2));
     } else {
-      // For pcs: only integer
+      // For others: only integer
       finalQuantity = parsed.roundToDouble();
     }
 
@@ -243,7 +255,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Pilih minimal 1 layanan'),
+          content: Text('Pilih minimal 1 item'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -383,11 +395,12 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     final orderItems = _items
         .map((e) => OrderItem(
               orderId: 0,
-              serviceId: e.service.id,
-              serviceName: e.service.name,
+              serviceId: null, // No longer using service table directly
+              productId: e.product.id,
+              serviceName: e.product.name,
               quantity: e.quantity.toDouble(),
-              unit: e.service.unit.value,
-              pricePerUnit: e.service.price,
+              unit: e.product.unit,
+              pricePerUnit: e.product.price,
               subtotal: e.subtotal,
             ))
         .toList();
@@ -558,10 +571,23 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 
               const SizedBox(height: 24),
 
-              // Services Section
-              _buildSectionTitle('Pilih Layanan'),
+              // Product/Service Items Section
+              _buildSectionTitle('Pilih Item'),
               const SizedBox(height: 12),
-              _buildServiceSelector(),
+              
+              // Tabs for filtering
+              Row(
+                children: [
+                  _buildTabButton(0, 'Semua'),
+                  const SizedBox(width: 8),
+                  _buildTabButton(1, 'Layanan'),
+                  const SizedBox(width: 8),
+                  _buildTabButton(2, 'Barang'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              _buildProductSelector(),
 
               const SizedBox(height: 16),
 
@@ -579,7 +605,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
               const SizedBox(height: 24),
 
               // Due Date
-              _buildSectionTitle('Tanggal Ambil'),
+              _buildSectionTitle('Tanggal Ambil (Estimasi Selesai)'),
               const SizedBox(height: 12),
               InkWell(
                 onTap: _selectDueDate,
@@ -729,6 +755,34 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     );
   }
 
+  Widget _buildTabButton(int index, String label) {
+    final isSelected = _selectedTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTab = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppThemeColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? AppThemeColors.primary : AppThemeColors.border,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: isSelected ? Colors.white : AppThemeColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -811,12 +865,44 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     );
   }
 
-  Widget _buildServiceSelector() {
-    return BlocBuilder<ServiceCubit, ServiceState>(
+  Widget _buildProductSelector() {
+    return BlocBuilder<ProductCubit, ProductState>(
       builder: (context, state) {
-        final services = context.read<ServiceCubit>().services;
+        if (state is ProductLoading && state is! ProductLoaded) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: CircularProgressIndicator(),
+          ));
+        }
 
-        if (services.isEmpty) {
+        List<Product> products = [];
+        if (state is ProductLoaded) {
+           if (_selectedTab == 0) {
+             products = state.products;
+           } else if (_selectedTab == 1) {
+             products = state.serviceList;
+           } else {
+             products = state.goodsList;
+           }
+        }
+        // Also handle the case where products are already loaded but we might be in another state like OperationSuccess
+        // Ideally Cubit should hold data. Using context.read to be safe if state is not loaded
+        if (state is! ProductLoaded) {
+          final cubit = context.read<ProductCubit>();
+          // Fallback if possible, or just wait for loaded state
+          if (cubit.state is ProductLoaded) {
+               final loaded = cubit.state as ProductLoaded;
+               if (_selectedTab == 0) {
+                 products = loaded.products;
+               } else if (_selectedTab == 1) {
+                 products = loaded.serviceList;
+               } else {
+                 products = loaded.goodsList;
+               }
+          }
+        }
+
+        if (products.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -828,20 +914,20 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
               child: Column(
                 children: [
                   Icon(
-                    Icons.local_laundry_service_outlined,
+                    Icons.category_outlined,
                     size: 40,
                     color: AppThemeColors.textSecondary.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Belum ada layanan',
+                    'Belum ada item',
                     style: GoogleFonts.poppins(
                       color: AppThemeColors.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   Text(
-                    'Tambah layanan di menu Settings',
+                    'Tambah item di menu Master Item',
                     style: GoogleFonts.poppins(
                       color: AppThemeColors.textSecondary,
                       fontSize: 12,
@@ -862,20 +948,20 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
           child: ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: services.length,
+            itemCount: products.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,
               color: AppThemeColors.border,
             ),
             itemBuilder: (context, index) {
-              final service = services[index];
-              final isSelected = _items.any((e) => e.service.id == service.id);
+              final product = products[index];
+              final isSelected = _items.any((e) => e.product.id == product.id);
 
               return InkWell(
-                onTap: () => _toggleItem(service),
+                onTap: () => _toggleItem(product),
                 borderRadius: BorderRadius.vertical(
                   top: index == 0 ? const Radius.circular(12) : Radius.zero,
-                  bottom: index == services.length - 1 ? const Radius.circular(12) : Radius.zero,
+                  bottom: index == products.length - 1 ? const Radius.circular(12) : Radius.zero,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -898,20 +984,20 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                             : null,
                       ),
                       const SizedBox(width: 12),
-                      // Service info
+                      // Product info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              service.name,
+                              product.name,
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w500,
                                 color: AppThemeColors.textPrimary,
                               ),
                             ),
                             Text(
-                              'per ${service.unit.value}',
+                              'per ${product.unit}',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: AppThemeColors.textSecondary,
@@ -922,7 +1008,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       ),
                       // Price
                       Text(
-                        CurrencyFormatter.format(service.price),
+                        CurrencyFormatter.format(product.price),
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           color: AppThemeColors.primary,
@@ -947,7 +1033,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Row 1: Nama service dan tombol delete
+            // Row 1: Nama product dan tombol delete
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -956,7 +1042,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.service.name,
+                        item.product.name,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -964,7 +1050,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${CurrencyFormatter.format(item.service.price)}/${item.service.unit.value}',
+                        '${CurrencyFormatter.format(item.product.price)}/${item.product.unit}',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -1006,7 +1092,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       ),
                     ),
                     Text(
-                      '${item.quantityDisplay} ${item.service.unit.value}',
+                      '${item.quantityDisplay} ${item.product.unit}',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: AppThemeColors.textSecondary,
@@ -1023,9 +1109,11 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   }
 
   Widget _buildQuantityControls(int index, _OrderItemEntry item) {
-    final isKg = item.service.unit == ServiceUnit.kg;
-    final step = isKg ? 0.5 : 1.0;
-    final minQuantity = isKg ? 0.5 : 1.0;
+    // Determine step based on unit. If generic, assume 1. If kg, 0.5.
+    final unicode = item.product.unit.toLowerCase();
+    final isDecimal = unicode == 'kg' || unicode == 'liter' || unicode == 'm';
+    final step = isDecimal ? 0.5 : 1.0;
+    final minQuantity = isDecimal ? 0.5 : 1.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -1097,29 +1185,27 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 }
 
 class _OrderItemEntry {
-  final Service service;
+  final Product product;
   double quantity;
   int subtotal;
 
   _OrderItemEntry({
-    required this.service,
+    required this.product,
     this.quantity = 1,
-  }) : subtotal = service.price;
+  }) : subtotal = product.price;
 
   void updateSubtotal() {
-    subtotal = (service.price * quantity).round();
+    subtotal = (product.price * quantity).round();
   }
 
   /// Format quantity display based on unit type
   String get quantityDisplay {
-    if (service.unit == ServiceUnit.pcs) {
-      return quantity.toInt().toString();
-    } else {
-      // For kg, show decimal if needed
-      return quantity == quantity.roundToDouble()
-          ? quantity.toInt().toString()
-          : quantity.toStringAsFixed(1);
+    // Simple heuristic for decimal display
+    // If rounded matches original, show int.
+    if (quantity == quantity.roundToDouble()) {
+       return quantity.toInt().toString();
     }
+    return quantity.toStringAsFixed(1);
   }
 }
 

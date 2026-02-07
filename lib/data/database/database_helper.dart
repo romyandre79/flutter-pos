@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:flutter_laundry_offline_app/core/constants/app_constants.dart';
-import 'package:flutter_laundry_offline_app/core/utils/password_helper.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_pos_offline/core/constants/app_constants.dart';
+import 'package:flutter_pos_offline/core/utils/password_helper.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -16,8 +18,17 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
+    final String dbPath;
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      final docsDir = await getApplicationDocumentsDirectory();
+      dbPath = docsDir.path;
+    } else {
+      dbPath = await getDatabasesPath();
+    }
     final path = join(dbPath, filePath);
+
+    // Print path for debugging
+    // print('Database path: $path');
 
     return await openDatabase(
       path,
@@ -77,6 +88,25 @@ class DatabaseHelper {
       )
     ''');
 
+    // Create Products table
+    await db.execute('''
+      CREATE TABLE products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        price INTEGER NOT NULL,
+        cost INTEGER DEFAULT 0,
+        stock INTEGER,
+        unit TEXT NOT NULL,
+        type TEXT NOT NULL, -- service, goods
+        duration_days INTEGER,
+        image_url TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
     // Create Orders table
     await db.execute('''
       CREATE TABLE orders (
@@ -112,8 +142,10 @@ class DatabaseHelper {
         unit TEXT NOT NULL,
         price_per_unit INTEGER NOT NULL,
         subtotal INTEGER NOT NULL,
+        product_id INTEGER,
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-        FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE SET NULL
+        FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE SET NULL,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
       )
     ''');
 
@@ -139,6 +171,50 @@ class DatabaseHelper {
       CREATE TABLE app_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
+      )
+    ''');
+
+    // Create Suppliers table
+    await db.execute('''
+      CREATE TABLE suppliers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        address TEXT,
+        phone TEXT,
+        email TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    // Create Purchase Orders table
+    await db.execute('''
+      CREATE TABLE purchase_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        supplier_id INTEGER NOT NULL,
+        order_date TEXT NOT NULL,
+        expected_date TEXT,
+        status TEXT NOT NULL, -- pending, received, cancelled
+        total_amount INTEGER DEFAULT 0,
+        notes TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Create Purchase Order Items table
+    await db.execute('''
+      CREATE TABLE purchase_order_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        purchase_order_id INTEGER NOT NULL,
+        item_name TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        cost INTEGER NOT NULL,
+        subtotal INTEGER NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE
       )
     ''');
 
@@ -170,6 +246,10 @@ class DatabaseHelper {
     // Payments indexes
     await db.execute('CREATE INDEX idx_payments_order ON payments(order_id)');
     await db.execute('CREATE INDEX idx_payments_date ON payments(payment_date)');
+
+    // Products indexes
+    await db.execute('CREATE INDEX idx_products_type ON products(type)');
+    await db.execute('CREATE INDEX idx_products_name ON products(name)');
   }
 
   Future<void> _seedData(Database db) async {
@@ -185,12 +265,6 @@ class DatabaseHelper {
 
     // Seed default services
     final services = [
-      {'name': 'Cuci Kering', 'unit': 'kg', 'price': 8000, 'duration_days': 3},
-      {'name': 'Cuci Setrika', 'unit': 'kg', 'price': 10000, 'duration_days': 3},
-      {'name': 'Setrika Saja', 'unit': 'kg', 'price': 5000, 'duration_days': 2},
-      {'name': 'Cuci Bed Cover', 'unit': 'pcs', 'price': 25000, 'duration_days': 4},
-      {'name': 'Cuci Karpet', 'unit': 'pcs', 'price': 35000, 'duration_days': 5},
-      {'name': 'Cuci Boneka', 'unit': 'pcs', 'price': 15000, 'duration_days': 3},
     ];
 
     for (final service in services) {
@@ -198,13 +272,22 @@ class DatabaseHelper {
         ...service,
         'is_active': 1,
       });
+      // Also insert into products
+      await db.insert('products', {
+        'name': service['name'],
+        'unit': service['unit'],
+        'price': service['price'],
+        'duration_days': service['duration_days'],
+        'type': 'service',
+        'is_active': 1,
+      });
     }
 
     // Seed default settings
     final settings = {
-      AppConstants.keyLaundryName: AppConstants.defaultLaundryName,
-      AppConstants.keyLaundryAddress: AppConstants.defaultLaundryAddress,
-      AppConstants.keyLaundryPhone: AppConstants.defaultLaundryPhone,
+      AppConstants.keyStoreName: AppConstants.defaultStoreName,
+      AppConstants.keyStoreAddress: AppConstants.defaultStoreAddress,
+      AppConstants.keyStorePhone: AppConstants.defaultStorePhone,
       AppConstants.keyInvoicePrefix: AppConstants.defaultInvoicePrefix,
       AppConstants.keyPrinterAddress: '',
       AppConstants.keyLastInvoiceDate: '',
@@ -222,8 +305,102 @@ class DatabaseHelper {
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     // Handle migrations here
     if (oldVersion < 2) {
-      // Add change column to payments table
-      await db.execute('ALTER TABLE payments ADD COLUMN change INTEGER DEFAULT 0');
+      // Add change column to payments table if it doesn't exist
+      final columns = await db.rawQuery('PRAGMA table_info(payments)');
+      final hasChangeColumn = columns.any((col) => col['name'] == 'change');
+      
+      if (!hasChangeColumn) {
+        await db.execute('ALTER TABLE payments ADD COLUMN change INTEGER DEFAULT 0');
+      }
+      
+      
+      // Add Purchasing tables (Suppliers, POs) if they don't exist
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS suppliers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          contact_person TEXT,
+          address TEXT,
+          phone TEXT,
+          email TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchase_orders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          supplier_id INTEGER NOT NULL,
+          order_date TEXT NOT NULL,
+          expected_date TEXT,
+          status TEXT NOT NULL,
+          total_amount INTEGER DEFAULT 0,
+          notes TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchase_order_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          purchase_order_id INTEGER NOT NULL,
+          item_name TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          cost INTEGER NOT NULL,
+          subtotal INTEGER NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE
+        )
+      ''');
+    }
+
+    if (oldVersion < 3) {
+      // Create Products table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          price INTEGER NOT NULL,
+          cost INTEGER DEFAULT 0,
+          stock INTEGER,
+          unit TEXT NOT NULL,
+          type TEXT NOT NULL, -- service, goods
+          duration_days INTEGER,
+          image_url TEXT,
+          is_active INTEGER DEFAULT 1,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      // Migrate Services to Products
+      // Check if services table exists and has data
+      final servicesExist = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='services'");
+      if (servicesExist.isNotEmpty) {
+        await db.execute('''
+          INSERT INTO products (id, name, unit, price, duration_days, is_active, created_at, type)
+          SELECT id, name, unit, price, duration_days, is_active, created_at, 'service'
+          FROM services
+        ''');
+      }
+
+      // Add product_id to order_items
+      final columns = await db.rawQuery('PRAGMA table_info(order_items)');
+      final hasProductIdColumn = columns.any((col) => col['name'] == 'product_id');
+
+      if (!hasProductIdColumn) {
+        await db.execute('ALTER TABLE order_items ADD COLUMN product_id INTEGER');
+        
+        // Migrate service_id to product_id
+        await db.execute('UPDATE order_items SET product_id = service_id WHERE service_id IS NOT NULL');
+        
+        // Create index for product_id
+        await db.execute('CREATE INDEX idx_order_items_product ON order_items(product_id)');
+      }
     }
   }
 
