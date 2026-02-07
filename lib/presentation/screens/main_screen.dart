@@ -21,6 +21,7 @@ import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_c
 import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -124,7 +125,10 @@ class _MainScreenState extends State<MainScreen> {
            // Add POS Screen
            screens.add(
             BlocProvider(
-              create: (context) => PosCubit(context.read<ProductRepository>())..loadProducts(),
+              create: (context) => PosCubit(
+                context.read<ProductRepository>(),
+                context.read<CustomerRepository>(),
+              )..loadProducts(),
               child: PosScreen(), // Removed const
             ),
           );

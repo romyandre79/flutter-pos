@@ -1,13 +1,16 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_pos_offline/data/models/cart_item.dart';
 import 'package:flutter_pos_offline/data/models/product.dart';
+import 'package:flutter_pos_offline/data/models/customer.dart';
 import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 import 'package:flutter_pos_offline/logic/cubits/pos/pos_state.dart';
 
 class PosCubit extends Cubit<PosState> {
   final ProductRepository _productRepository;
+  final CustomerRepository _customerRepository;
 
-  PosCubit(this._productRepository) : super(PosInitial()) {
+  PosCubit(this._productRepository, this._customerRepository) : super(PosInitial()) {
     // Optionally load products immediately, but explicit call is safer for now
     // loadProducts();
     // No, dashboard calls loadProducts().
@@ -119,6 +122,28 @@ class PosCubit extends Cubit<PosState> {
     if (state is PosLoaded) {
       final currentState = state as PosLoaded;
       emit(currentState.copyWith(cartItems: []));
+    }
+  }
+
+  // Select a customer
+  void selectCustomer(Customer? customer) {
+    if (state is PosLoaded) {
+      final currentState = state as PosLoaded;
+      emit(currentState.copyWith(
+        selectedCustomer: customer,
+        customerName: customer?.name ?? 'Walk-in Customer',
+      ));
+    }
+  }
+
+  // Set customer name (free text)
+  void setCustomerName(String name) {
+    if (state is PosLoaded) {
+      final currentState = state as PosLoaded;
+      emit(currentState.copyWith(
+        customerName: name,
+        selectedCustomer: null, // Reset selected object if name changes manually
+      ));
     }
   }
 

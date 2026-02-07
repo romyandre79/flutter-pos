@@ -6,6 +6,7 @@ import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
 import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
 import 'package:flutter_pos_offline/logic/cubits/report/report_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/report/report_state.dart';
+import 'package:flutter_pos_offline/presentation/screens/main_screen.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -170,6 +171,15 @@ class _ReportScreenState extends State<ReportScreen> {
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Row(
             children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).canPop() 
+                    ? Navigator.of(context).pop() 
+                    : Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (_) => const MainScreen())
+                      ),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+              ),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   'Laporan',

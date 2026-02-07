@@ -23,6 +23,7 @@ import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
 import 'package:flutter_pos_offline/presentation/screens/products/product_list_screen.dart';
 import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
 import 'package:flutter_pos_offline/presentation/screens/pos/pos_screen.dart';
+import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -372,7 +373,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => BlocProvider(
-                        create: (context) => PosCubit(context.read<ProductRepository>())..loadProducts(),
+                        create: (context) => PosCubit(
+                          context.read<ProductRepository>(),
+                          context.read<CustomerRepository>(),
+                        )..loadProducts(),
                         child: PosScreen(),
                       ),
                     ),

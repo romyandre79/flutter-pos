@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_pos_offline/data/models/cart_item.dart';
 import 'package:flutter_pos_offline/data/models/product.dart';
+import 'package:flutter_pos_offline/data/models/customer.dart';
 
 abstract class PosState extends Equatable {
   const PosState();
@@ -19,6 +20,8 @@ class PosLoaded extends PosState {
   final List<CartItem> cartItems;
   final String selectedCategory; // 'All', 'Kiloan', 'Satuan', 'Barang', 'Jasa'
   final String searchQuery;
+  final Customer? selectedCustomer;
+  final String customerName;
 
   const PosLoaded({
     this.products = const [],
@@ -26,6 +29,8 @@ class PosLoaded extends PosState {
     this.cartItems = const [],
     this.selectedCategory = 'All',
     this.searchQuery = '',
+    this.selectedCustomer,
+    this.customerName = 'Walk-in Customer',
   });
 
   int get totalAmount => cartItems.fold(0, (sum, item) => sum + item.subtotal);
@@ -37,6 +42,8 @@ class PosLoaded extends PosState {
     List<CartItem>? cartItems,
     String? selectedCategory,
     String? searchQuery,
+    Customer? selectedCustomer,
+    String? customerName,
   }) {
     return PosLoaded(
       products: products ?? this.products,
@@ -44,6 +51,8 @@ class PosLoaded extends PosState {
       cartItems: cartItems ?? this.cartItems,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       searchQuery: searchQuery ?? this.searchQuery,
+      selectedCustomer: selectedCustomer ?? this.selectedCustomer,
+      customerName: customerName ?? this.customerName,
     );
   }
 
@@ -54,6 +63,8 @@ class PosLoaded extends PosState {
         cartItems,
         selectedCategory,
         searchQuery,
+        selectedCustomer,
+        customerName,
       ];
 }
 
