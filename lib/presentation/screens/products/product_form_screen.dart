@@ -101,6 +101,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       final description = _descriptionController.text;
       
       final imagePath = await _saveImage();
+      if (!mounted) return;
       
       final product = Product(
         id: widget.product?.id,

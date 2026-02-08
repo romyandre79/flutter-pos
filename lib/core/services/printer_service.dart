@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter_pos_offline/data/models/order.dart';
 import 'package:flutter_pos_offline/core/services/store_print.dart';
@@ -115,7 +116,7 @@ class PrinterService {
         _scanController.add(infos);
       });
     } catch (e) {
-      print('Windows Scan Error: $e');
+      debugPrint('Windows Scan Error: $e');
       _scanController.add([]);
     }
   }
@@ -150,7 +151,7 @@ class PrinterService {
           source: d,
         )).toList();
       } catch (e) {
-        print('Mobile Bluetooth Scan Error: $e');
+        debugPrint('Mobile Bluetooth Scan Error: $e');
       }
 
       // Merge and emit
@@ -170,7 +171,7 @@ class PrinterService {
       }
 
     } catch (e) {
-      print('Mobile Scan Error: $e');
+      debugPrint('Mobile Scan Error: $e');
       _scanController.add([]);
     }
   }
@@ -227,7 +228,7 @@ class PrinterService {
       
       return false;
     } catch (e) {
-      // print('Error connecting: $e');
+      // debugPrint('Error connecting: $e');
       return false;
     }
   }
@@ -362,7 +363,7 @@ class PrinterService {
       
       return false;
     } catch (e) {
-      print('Print Error: $e');
+      debugPrint('Print Error: $e');
       return false;
     }
   }

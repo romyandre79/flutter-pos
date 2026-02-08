@@ -949,7 +949,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: products.length,
-            separatorBuilder: (_, __) => Divider(
+            separatorBuilder: (_, _) => Divider(
               height: 1,
               color: AppThemeColors.border,
             ),
@@ -1186,12 +1186,11 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 
 class _OrderItemEntry {
   final Product product;
-  double quantity;
+  double quantity = 1;
   int subtotal;
 
   _OrderItemEntry({
     required this.product,
-    this.quantity = 1,
   }) : subtotal = product.price;
 
   void updateSubtotal() {
@@ -1353,7 +1352,7 @@ class _CustomerSearchSheetState extends State<_CustomerSearchSheet> {
                 return ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: customers.length,
-                  separatorBuilder: (_, __) => Divider(
+                  separatorBuilder: (_, _) => Divider(
                     height: 1,
                     color: AppThemeColors.border,
                   ),

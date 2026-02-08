@@ -441,7 +441,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: AppThemeColors.success.withOpacity(0.1),
+                  color: AppThemeColors.success.withValues(alpha: 0.1),
                   borderRadius: AppRadius.fullRadius,
                 ),
                 child: Text(
@@ -531,7 +531,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: availableDevices.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, index) {
                 final device = availableDevices[index];
                 return _buildDeviceItem(context, device);
@@ -558,7 +558,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppThemeColors.primary.withOpacity(0.1),
+                color: AppThemeColors.primary.withValues(alpha: 0.1),
                 borderRadius: AppRadius.smRadius,
               ),
               child: Icon(
@@ -630,8 +630,6 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
         return Icons.usb;
       case PrinterType.network:
         return Icons.wifi;
-      default:
-        return Icons.print;
     }
   }
 

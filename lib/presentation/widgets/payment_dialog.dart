@@ -179,7 +179,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
             // Payment Method Dropdown
             DropdownButtonFormField<PaymentMethod>(
-              value: _paymentMethod,
+              initialValue: _paymentMethod,
               decoration: const InputDecoration(
                 labelText: 'Metode Pembayaran',
                 border: OutlineInputBorder(),
@@ -200,7 +200,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
             // Order Status Dropdown
             DropdownButtonFormField<OrderStatus>(
-              value: _orderStatus,
+              initialValue: _orderStatus,
               decoration: const InputDecoration(
                 labelText: 'Status Order',
                 border: OutlineInputBorder(),
