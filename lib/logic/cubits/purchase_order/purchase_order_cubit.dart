@@ -24,7 +24,7 @@ class PurchaseOrderCubit extends Cubit<PurchaseOrderState> {
     try {
       emit(PoLoading());
       await _repository.createPurchaseOrder(po);
-      emit(const PoOperationSuccess('Purchase Order created successfully'));
+      emit(const PoOperationSuccess('Pembelian created successfully'));
       loadPurchaseOrders();
     } catch (e) {
       emit(PoError('Failed to create purchase order: ${e.toString()}'));
@@ -46,7 +46,7 @@ class PurchaseOrderCubit extends Cubit<PurchaseOrderState> {
     try {
       emit(PoLoading());
       await _repository.deletePurchaseOrder(id);
-      emit(const PoOperationSuccess('Purchase Order deleted successfully'));
+      emit(const PoOperationSuccess('Pembelian deleted successfully'));
       loadPurchaseOrders();
     } catch (e) {
       emit(PoError('Failed to delete purchase order: ${e.toString()}'));

@@ -2,13 +2,13 @@ class AppConstants {
   AppConstants._();
 
   // App Info
-  static const String appName = 'POS Offline';
+  static const String appName = 'Kreatif MajuMU - POS Offline';
   static const String appVersion = '1.0.0';
   static const String appDescription = 'Aplikasi Kasir POS Offline - Full Offline, Jalan Tanpa Internet!';
 
   // Database
   static const String databaseName = 'pos_offline.db';
-  static const int databaseVersion = 4;
+  static const int databaseVersion = 5;
 
   // Invoice
   static const String defaultInvoicePrefix = 'POS';

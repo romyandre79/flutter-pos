@@ -20,8 +20,12 @@ import 'package:flutter_pos_offline/presentation/screens/settings/printer_settin
 import 'package:flutter_pos_offline/presentation/widgets/order_card.dart';
 import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
 import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
-import 'package:flutter_pos_offline/presentation/screens/products/product_list_screen.dart';
 import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_cubit.dart';
+import 'package:flutter_pos_offline/presentation/screens/purchasing/purchase_order_list_screen.dart';
+import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
+import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
+import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
 import 'package:flutter_pos_offline/presentation/screens/pos/pos_screen.dart';
 import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 
@@ -387,16 +391,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: _buildQuickActionItem(
-                icon: Icons.category,
-                label: 'Master Item',
+                icon: Icons.shopping_bag,
+                label: 'Pembelian',
                 color: AppThemeColors.primary,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => BlocProvider(
-                        create: (context) => ProductCubit(context.read<ProductRepository>()),
-                        child: const ProductListScreen(),
+                      builder: (_) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider(
+                            create: (context) => PurchaseOrderCubit(
+                              repository: context.read<PurchaseOrderRepository>(),
+                            ),
+                          ),
+                          BlocProvider(
+                            create: (context) => SupplierCubit(
+                              supplierRepository: context.read<SupplierRepository>(),
+                            ),
+                          ),
+                        ],
+                        child: const PurchaseOrderListScreen(),
                       ),
                     ),
                   );

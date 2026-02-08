@@ -108,38 +108,84 @@ class ReportRepository {
       GROUP BY DATE(payment_date)
     ''', [start.toIso8601String(), end.toIso8601String()]);
 
-    // Create map of daily payments
+    // Get total purchases
+    final purchaseResult = await db.rawQuery('''
+      SELECT SUM(total_amount) as total_purchases
+      FROM purchase_orders
+      WHERE order_date BETWEEN ? AND ? AND status != 'cancelled'
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+    
+    final totalPurchases = (purchaseResult.first['total_purchases'] as int?) ?? 0;
+
+    // Get daily purchases
+    final dailyPurchaseResult = await db.rawQuery('''
+      SELECT 
+        DATE(order_date) as date,
+        SUM(total_amount) as purchases
+      FROM purchase_orders
+      WHERE order_date BETWEEN ? AND ? AND status != 'cancelled'
+      GROUP BY DATE(order_date)
+    ''', [start.toIso8601String(), end.toIso8601String()]);
+
+    // Create maps for quick lookup
     final dailyPayments = <String, int>{};
     for (final row in dailyPaymentResult) {
       final date = row['date'] as String;
       dailyPayments[date] = (row['paid'] as int?) ?? 0;
     }
 
-    // Combine orders and payments data
-    final dailyRevenue = dailyOrderResult.map((row) {
+    final dailyPurchases = <String, int>{};
+    for (final row in dailyPurchaseResult) {
+      final date = row['date'] as String;
+      dailyPurchases[date] = (row['purchases'] as int?) ?? 0;
+    }
+
+    // Combine orders, payments, and purchases data
+    // Start with dates from orders
+    final dailyDataMap = <String, DailyRevenue>{};
+
+    for (final row in dailyOrderResult) {
       final dateStr = row['date'] as String;
-      return DailyRevenue(
+      final revenue = (row['revenue'] as int?) ?? 0;
+      dailyDataMap[dateStr] = DailyRevenue(
         date: DateTime.parse(dateStr),
-        revenue: (row['revenue'] as int?) ?? 0,
+        revenue: revenue,
         orderCount: (row['order_count'] as int?) ?? 0,
         paid: dailyPayments[dateStr] ?? 0,
+        purchases: dailyPurchases[dateStr] ?? 0,
+        profit: revenue - (dailyPurchases[dateStr] ?? 0),
       );
-    }).toList();
+    }
 
     // Add days that have payments but no orders
     for (final entry in dailyPayments.entries) {
-      final exists = dailyRevenue.any(
-        (d) => d.date.toIso8601String().substring(0, 10) == entry.key,
-      );
-      if (!exists && entry.value > 0) {
-        dailyRevenue.add(DailyRevenue(
+      if (!dailyDataMap.containsKey(entry.key)) {
+        dailyDataMap[entry.key] = DailyRevenue(
           date: DateTime.parse(entry.key),
           revenue: 0,
           orderCount: 0,
           paid: entry.value,
-        ));
+          purchases: dailyPurchases[entry.key] ?? 0,
+          profit: 0 - (dailyPurchases[entry.key] ?? 0),
+        );
       }
     }
+
+    // Add days that have purchases but no orders or payments
+    for (final entry in dailyPurchases.entries) {
+      if (!dailyDataMap.containsKey(entry.key)) {
+        dailyDataMap[entry.key] = DailyRevenue(
+          date: DateTime.parse(entry.key),
+          revenue: 0,
+          orderCount: 0,
+          paid: dailyPayments[entry.key] ?? 0,
+          purchases: entry.value,
+          profit: 0 - entry.value,
+        );
+      }
+    }
+
+    final dailyRevenue = dailyDataMap.values.toList();
 
     // Sort by date
     dailyRevenue.sort((a, b) => a.date.compareTo(b.date));
@@ -177,6 +223,8 @@ class ReportRepository {
       totalRevenue: totalRevenue,
       totalPaid: totalPaid,
       totalUnpaid: totalRevenue - totalPaid,
+      totalPurchases: totalPurchases,
+      totalProfit: totalRevenue - totalPurchases,
       ordersByStatus: ordersByStatus,
       dailyRevenue: dailyRevenue,
       topServices: topServices,

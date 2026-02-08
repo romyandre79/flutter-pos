@@ -8,7 +8,7 @@
 PRODUCT_NAME = kreatifmajumu_pos_offline
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.prismadataabadi.flutterLaundryOfflineApp
+PRODUCT_BUNDLE_IDENTIFIER = com.kreatifmajumu.flutterPosOfflineApp
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.prismadataabadi. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.kreatifmajumu. All rights reserved.

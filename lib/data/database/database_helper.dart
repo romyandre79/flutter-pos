@@ -188,7 +188,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Create Purchase Orders table
+    // Simpans table
     await db.execute('''
       CREATE TABLE purchase_orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -204,7 +204,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Create Purchase Order Items table
+    // Simpan Items table
     await db.execute('''
       CREATE TABLE purchase_order_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -213,8 +213,10 @@ class DatabaseHelper {
         quantity INTEGER NOT NULL,
         cost INTEGER NOT NULL,
         subtotal INTEGER NOT NULL,
+        product_id INTEGER,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE
+        FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
       )
     ''');
 
@@ -423,6 +425,20 @@ class DatabaseHelper {
         SET can_access_suppliers = 1, can_access_items = 1 
         WHERE role = ?
       ''', ['owner']);
+    }
+
+    if (oldVersion < 5) {
+      // Add product_id to purchase_order_items
+      final columns = await db.rawQuery('PRAGMA table_info(purchase_order_items)');
+      final hasProductIdColumn = columns.any((col) => col['name'] == 'product_id');
+
+      if (!hasProductIdColumn) {
+        await db.execute('ALTER TABLE purchase_order_items ADD COLUMN product_id INTEGER');
+        
+        // No need to backfill as older items didn't have this concept
+        // Create index
+        await db.execute('CREATE INDEX idx_po_items_product ON purchase_order_items(product_id)');
+      }
     }
   }
 

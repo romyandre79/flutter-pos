@@ -10,6 +10,9 @@ class ReportData {
   final int totalRevenue;
   final int totalPaid;
   final int totalUnpaid;
+  // New fields for Purchasing and Profit
+  final int totalPurchases;
+  final int totalProfit; // Revenue - Purchases
   final Map<OrderStatus, int> ordersByStatus;
   final List<DailyRevenue> dailyRevenue;
   final List<ServiceSummary> topServices;
@@ -23,6 +26,8 @@ class ReportData {
     required this.totalRevenue,
     required this.totalPaid,
     required this.totalUnpaid,
+    this.totalPurchases = 0,
+    this.totalProfit = 0,
     required this.ordersByStatus,
     required this.dailyRevenue,
     required this.topServices,
@@ -34,12 +39,16 @@ class DailyRevenue {
   final int revenue;
   final int orderCount;
   final int paid; // Pembayaran yang diterima pada tanggal ini
+  final int purchases; // Pembelian pada tanggal ini
+  final int profit; // revenue - purchases for this day
 
   DailyRevenue({
     required this.date,
     required this.revenue,
     required this.orderCount,
     this.paid = 0,
+    this.purchases = 0,
+    this.profit = 0,
   });
 }
 

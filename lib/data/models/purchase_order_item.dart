@@ -5,6 +5,7 @@ class PurchaseOrderItem {
   final int quantity;
   final int cost; // Price per unit
   final int subtotal;
+  final int? productId; // Link to master product
   final DateTime? createdAt;
 
   PurchaseOrderItem({
@@ -14,6 +15,7 @@ class PurchaseOrderItem {
     required this.quantity,
     required this.cost,
     required this.subtotal,
+    this.productId,
     this.createdAt,
   });
 
@@ -25,6 +27,7 @@ class PurchaseOrderItem {
       'quantity': quantity,
       'cost': cost,
       'subtotal': subtotal,
+      'product_id': productId,
       'created_at': createdAt?.toIso8601String(),
     };
   }
@@ -37,6 +40,7 @@ class PurchaseOrderItem {
       quantity: map['quantity'] as int,
       cost: map['cost'] as int,
       subtotal: map['subtotal'] as int,
+      productId: map['product_id'] as int?,
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
     );
   }
@@ -48,6 +52,7 @@ class PurchaseOrderItem {
     int? quantity,
     int? cost,
     int? subtotal,
+    int? productId,
     DateTime? createdAt,
   }) {
     return PurchaseOrderItem(
@@ -57,6 +62,7 @@ class PurchaseOrderItem {
       quantity: quantity ?? this.quantity,
       cost: cost ?? this.cost,
       subtotal: subtotal ?? this.subtotal,
+      productId: productId ?? this.productId,
       createdAt: createdAt ?? this.createdAt,
     );
   }

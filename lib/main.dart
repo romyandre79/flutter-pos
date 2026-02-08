@@ -21,7 +21,9 @@ import 'package:flutter_pos_offline/data/repositories/user_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/payment_repository.dart'; // Add import
 import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos_offline/core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +47,7 @@ void main() async {
     SharedPreferences.getInstance(),
     DateFormatter.initialize(),
     DatabaseHelper.instance.database,
+    NotificationService().init(),
   ]);
 
   final prefs = results[0] as SharedPreferences;
@@ -71,6 +74,7 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (_) => SupplierRepository()),
         RepositoryProvider(create: (_) => PurchaseOrderRepository()),
         RepositoryProvider(create: (_) => ProductRepository()),         
+        RepositoryProvider(create: (_) => PaymentRepository()), // Add PaymentRepository
       ],
       child: MultiBlocProvider(
         providers: [
@@ -83,6 +87,8 @@ class MyApp extends StatelessWidget {
             create: (context) => OrderCubit(
               orderRepository: context.read<OrderRepository>(),
               productRepository: context.read<ProductRepository>(),
+              customerRepository: context.read<CustomerRepository>(), // Inject CustomerRepository
+              paymentRepository: context.read<PaymentRepository>(), // Inject PaymentRepository
             )..loadOrders(),
           ),
         ],

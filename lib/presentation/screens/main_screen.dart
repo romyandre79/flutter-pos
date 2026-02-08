@@ -22,6 +22,8 @@ import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/order_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/payment_repository.dart';
 
 
 class MainScreen extends StatefulWidget {
@@ -40,6 +42,9 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _orderCubit = OrderCubit(
       productRepository: context.read<ProductRepository>(),
+      orderRepository: context.read<OrderRepository>(),
+      customerRepository: context.read<CustomerRepository>(),
+      paymentRepository: context.read<PaymentRepository>(),
     )..loadOrders();
   }
 
@@ -137,7 +142,7 @@ class _MainScreenState extends State<MainScreen> {
 
 
         if (isOwner) {
-          // Add Purchase Order Screen
+          // Add Pembelian Screen
           screens.add(
             MultiBlocProvider(
               providers: [

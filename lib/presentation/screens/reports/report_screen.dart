@@ -90,73 +90,82 @@ class _ReportScreenState extends State<ReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppThemeColors.background,
-      body: Column(
-        children: [
-          // Header
-          _buildHeader(),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: AppThemeColors.background,
+        body: Column(
+          children: [
+            // Header
+            _buildHeader(), // Now includes TabBar
+            
+            // Period selector
+            _buildPeriodSelector(),
 
-          // Period selector
-          _buildPeriodSelector(),
-
-          // Report content
-          Expanded(
-            child: BlocConsumer<ReportCubit, ReportState>(
-                listener: (context, state) {
-                  if (state is ReportExported) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: AppThemeColors.success,
-                      ),
-                    );
-                  } else if (state is ReportError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: AppThemeColors.error,
-                      ),
-                    );
-                  }
-                },
-                builder: (context, state) {
-                  if (state is ReportLoading || state is ReportExporting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: AppThemeColors.primary,
-                      ),
-                    );
-                  }
-
-                  if (state is ReportLoaded) {
-                    return _buildReportContent(state);
-                  }
-
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.analytics_outlined,
-                          size: 64,
-                          color: AppThemeColors.textSecondary.withValues(alpha: 0.5),
+            // Report content
+            Expanded(
+              child: BlocConsumer<ReportCubit, ReportState>(
+                  listener: (context, state) {
+                    if (state is ReportExported) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message),
+                          backgroundColor: AppThemeColors.success,
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          'Pilih periode untuk melihat laporan',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: AppThemeColors.textSecondary,
+                      );
+                    } else if (state is ReportError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message),
+                          backgroundColor: AppThemeColors.error,
+                        ),
+                      );
+                    }
+                  },
+                  builder: (context, state) {
+                    if (state is ReportLoading || state is ReportExporting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppThemeColors.primary,
+                        ),
+                      );
+                    }
+
+                    if (state is ReportLoaded) {
+                      return TabBarView(
+                        children: [
+                          _buildSalesTab(state.data),
+                          _buildPurchaseTab(state.data),
+                          _buildProfitTab(state.data),
+                        ],
+                      );
+                    }
+
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.analytics_outlined,
+                            size: 64,
+                            color: AppThemeColors.textSecondary.withValues(alpha: 0.5),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                          const SizedBox(height: AppSpacing.lg),
+                          Text(
+                            'Pilih periode untuk melihat laporan',
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppThemeColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+      ),
     );
   }
 
@@ -168,49 +177,69 @@ class _ReportScreenState extends State<ReportScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            top: AppSpacing.lg,
+          ),
+          child: Column(
             children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).canPop() 
-                    ? Navigator.of(context).pop() 
-                    : Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (_) => const MainScreen())
-                      ),
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  'Laporan',
-                  style: AppTypography.headlineMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).canPop() 
+                        ? Navigator.of(context).pop() 
+                        : Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(builder: (_) => const MainScreen())
+                          ),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
                   ),
-                ),
-              ),
-              BlocBuilder<ReportCubit, ReportState>(
-                builder: (context, state) {
-                  final isLoaded = state is ReportLoaded;
-                  return GestureDetector(
-                    onTap: isLoaded
-                        ? () => context.read<ReportCubit>().exportToExcel()
-                        : null,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: isLoaded ? 0.2 : 0.1),
-                        borderRadius: AppRadius.smRadius,
-                      ),
-                      child: Icon(
-                        Icons.file_download_outlined,
-                        color: Colors.white.withValues(alpha: isLoaded ? 1.0 : 0.5),
-                        size: 20,
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Laporan',
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  );
-                },
+                  ),
+                  BlocBuilder<ReportCubit, ReportState>(
+                    builder: (context, state) {
+                      final isLoaded = state is ReportLoaded;
+                      return GestureDetector(
+                        onTap: isLoaded
+                            ? () => context.read<ReportCubit>().exportToExcel()
+                            : null,
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: isLoaded ? 0.2 : 0.1),
+                            borderRadius: AppRadius.smRadius,
+                          ),
+                          child: Icon(
+                            Icons.file_download_outlined,
+                            color: Colors.white.withValues(alpha: isLoaded ? 1.0 : 0.5),
+                            size: 20,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const TabBar(
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                labelStyle: TextStyle(fontWeight: FontWeight.bold),
+                tabs: [
+                  Tab(text: 'Penjualan'),
+                  Tab(text: 'Pembelian'),
+                  Tab(text: 'Laba Rugi'),
+                ],
               ),
             ],
           ),
@@ -319,9 +348,7 @@ class _ReportScreenState extends State<ReportScreen> {
     );
   }
 
-  Widget _buildReportContent(ReportLoaded state) {
-    final data = state.data;
-
+  Widget _buildSalesTab(ReportData data) {
     return RefreshIndicator(
       onRefresh: () async => _loadReport(),
       color: AppThemeColors.primary,
@@ -343,6 +370,243 @@ class _ReportScreenState extends State<ReportScreen> {
           // Top services
           _buildTopServices(data),
           const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPurchaseTab(ReportData data) {
+    return RefreshIndicator(
+      onRefresh: () async => _loadReport(),
+      color: AppThemeColors.primary,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          // Purchase Summary
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ringkasan Pembelian',
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildStatCard(
+                icon: Icons.shopping_cart_outlined,
+                label: 'Total Pembelian',
+                value: CurrencyFormatter.formatCompact(data.totalPurchases),
+                color: AppThemeColors.error,
+                fullWidth: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // Purchase Chart
+          if (data.dailyRevenue.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pembelian Harian',
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  height: 200,
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppRadius.lgRadius,
+                    boxShadow: AppShadows.small,
+                  ),
+                  child: BarChart(
+                    BarChartData(
+                      barGroups: data.dailyRevenue.asMap().entries.map((entry) {
+                        return BarChartGroupData(
+                          x: entry.key,
+                          barRods: [
+                            BarChartRodData(
+                              toY: entry.value.purchases.toDouble(),
+                              color: AppThemeColors.error,
+                              width: data.dailyRevenue.length > 10 ? 8 : 16,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(4),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                      titlesData: FlTitlesData(
+                        leftTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: data.dailyRevenue.length <= 7,
+                            getTitlesWidget: (value, meta) {
+                              final index = value.toInt();
+                              if (index >= 0 && index < data.dailyRevenue.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    '${data.dailyRevenue[index].date.day}',
+                                    style: AppTypography.labelSmall,
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      gridData: const FlGridData(show: false),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfitTab(ReportData data) {
+    return RefreshIndicator(
+      onRefresh: () async => _loadReport(),
+      color: AppThemeColors.primary,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          // Profit Summary
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ringkasan Laba Rugi',
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                   Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.attach_money,
+                      label: 'Pendapatan',
+                      value: CurrencyFormatter.formatCompact(data.totalRevenue),
+                      color: AppThemeColors.success,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.money_off,
+                      label: 'Pengeluaran',
+                      value: CurrencyFormatter.formatCompact(data.totalPurchases),
+                      color: AppThemeColors.error,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildStatCard(
+                icon: Icons.show_chart,
+                label: 'Laba Bersih',
+                value: CurrencyFormatter.formatCompact(data.totalProfit),
+                color: data.totalProfit >= 0 ? AppThemeColors.success : AppThemeColors.error,
+                fullWidth: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // Profit Chart
+          if (data.dailyRevenue.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Laba Harian',
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  height: 200,
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppRadius.lgRadius,
+                    boxShadow: AppShadows.small,
+                  ),
+                  child: BarChart(
+                    BarChartData(
+                      barGroups: data.dailyRevenue.asMap().entries.map((entry) {
+                        final profit = entry.value.profit.toDouble();
+                        return BarChartGroupData(
+                          x: entry.key,
+                          barRods: [
+                            BarChartRodData(
+                              toY: profit,
+                              color: profit >= 0 ? AppThemeColors.success : AppThemeColors.error,
+                              width: data.dailyRevenue.length > 10 ? 8 : 16,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(4),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                      titlesData: FlTitlesData(
+                        leftTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: data.dailyRevenue.length <= 7,
+                            getTitlesWidget: (value, meta) {
+                              final index = value.toInt();
+                              if (index >= 0 && index < data.dailyRevenue.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    '${data.dailyRevenue[index].date.day}',
+                                    style: AppTypography.labelSmall,
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      gridData: const FlGridData(show: false),
+                    ),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

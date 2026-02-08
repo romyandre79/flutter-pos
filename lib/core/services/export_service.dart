@@ -78,16 +78,26 @@ class ExportService {
     sheet.cell(CellIndex.indexByString('A12')).value = TextCellValue('Total Belum Dibayar');
     sheet.cell(CellIndex.indexByString('B12')).value =
         TextCellValue(CurrencyFormatter.format(reportData.totalUnpaid));
+        
+    sheet.cell(CellIndex.indexByString('A13')).value = TextCellValue('Total Pembelian');
+    sheet.cell(CellIndex.indexByString('B13')).value =
+        TextCellValue(CurrencyFormatter.format(reportData.totalPurchases));
+
+    sheet.cell(CellIndex.indexByString('A14')).value = TextCellValue('Total Laba Bersih');
+    sheet.cell(CellIndex.indexByString('B14')).value =
+        TextCellValue(CurrencyFormatter.format(reportData.totalProfit));
 
     // Daily revenue
-    sheet.cell(CellIndex.indexByString('A14')).value = TextCellValue('Pendapatan Harian');
+    sheet.cell(CellIndex.indexByString('A16')).value = TextCellValue('Laporan Harian');
 
-    sheet.cell(CellIndex.indexByString('A15')).value = TextCellValue('Tanggal');
-    sheet.cell(CellIndex.indexByString('B15')).value = TextCellValue('Jumlah Order');
-    sheet.cell(CellIndex.indexByString('C15')).value = TextCellValue('Omzet');
-    sheet.cell(CellIndex.indexByString('D15')).value = TextCellValue('Dibayar');
+    sheet.cell(CellIndex.indexByString('A17')).value = TextCellValue('Tanggal');
+    sheet.cell(CellIndex.indexByString('B17')).value = TextCellValue('Jumlah Order');
+    sheet.cell(CellIndex.indexByString('C17')).value = TextCellValue('Omzet');
+    sheet.cell(CellIndex.indexByString('D17')).value = TextCellValue('Dibayar');
+    sheet.cell(CellIndex.indexByString('E17')).value = TextCellValue('Pembelian');
+    sheet.cell(CellIndex.indexByString('F17')).value = TextCellValue('Laba');
 
-    int row = 16;
+    int row = 18;
     for (final daily in reportData.dailyRevenue) {
       sheet.cell(CellIndex.indexByString('A$row')).value =
           TextCellValue(DateFormatter.formatDate(daily.date));
@@ -96,6 +106,10 @@ class ExportService {
           TextCellValue(CurrencyFormatter.format(daily.revenue));
       sheet.cell(CellIndex.indexByString('D$row')).value =
           TextCellValue(CurrencyFormatter.format(daily.paid));
+      sheet.cell(CellIndex.indexByString('E$row')).value =
+          TextCellValue(CurrencyFormatter.format(daily.purchases));
+      sheet.cell(CellIndex.indexByString('F$row')).value =
+          TextCellValue(CurrencyFormatter.format(daily.profit));
       row++;
     }
   }

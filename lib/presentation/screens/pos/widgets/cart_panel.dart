@@ -24,9 +24,9 @@ class CartPanel extends StatelessWidget {
       context: context,
       builder: (ctx) => PaymentDialog(
         totalAmount: totalAmount,
-        onConfirm: (paidAmount, paymentMethod, status) {
+        onConfirm: (paidAmount, paymentMethod, status, dueDate) {
           // Use the captured cubit
-          _processCheckout(context, posCubit, paidAmount, paymentMethod, status);
+          _processCheckout(context, posCubit, paidAmount, paymentMethod, status, dueDate);
         },
       ),
     );
@@ -38,6 +38,7 @@ class CartPanel extends StatelessWidget {
     int paidAmount,
     PaymentMethod paymentMethod,
     OrderStatus status,
+    DateTime? dueDate,
   ) {
     final posState = posCubit.state;
     if (posState is! PosLoaded) return;
@@ -63,7 +64,7 @@ class CartPanel extends StatelessWidget {
       customerId: posState.selectedCustomer?.id,
       customerPhone: posState.selectedCustomer?.phone,
       items: orderItems,
-      dueDate: DateTime.now(), // Completed immediately
+      dueDate: dueDate, // Pass the selected due date
       initialPayment: paidAmount,
       paymentMethod: paymentMethod,
       status: status,

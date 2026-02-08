@@ -162,7 +162,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          widget.product == null ? 'Tambah Item' : 'Edit Item',
+          widget.product == null ? 'Tambah Item' : 'Ubah Item',
           style: AppTypography.headlineMedium.copyWith(color: Colors.white),
         ),
         backgroundColor: Colors.transparent,
