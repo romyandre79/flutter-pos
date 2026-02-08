@@ -155,7 +155,7 @@ class _PurchaseOrderCreateScreenState extends State<PurchaseOrderCreateScreen> {
                      builder: (context, state) {
                        if (state is SupplierLoaded) {
                          return DropdownButtonFormField<Supplier>(
-                           value: _selectedSupplier,
+                           initialValue: _selectedSupplier,
                            decoration: const InputDecoration(labelText: 'Supplier'),
                            items: state.suppliers.map((s) => DropdownMenuItem(value: s, child: Text(s.name))).toList(),
                            onChanged: (val) => setState(() => _selectedSupplier = val),

@@ -3,14 +3,12 @@ import 'package:flutter_pos_offline/data/models/cart_item.dart';
 import 'package:flutter_pos_offline/data/models/product.dart';
 import 'package:flutter_pos_offline/data/models/customer.dart';
 import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 import 'package:flutter_pos_offline/logic/cubits/pos/pos_state.dart';
 
 class PosCubit extends Cubit<PosState> {
   final ProductRepository _productRepository;
-  final CustomerRepository _customerRepository;
 
-  PosCubit(this._productRepository, this._customerRepository) : super(PosInitial()) {
+  PosCubit(this._productRepository) : super(PosInitial()) {
     // Optionally load products immediately, but explicit call is safer for now
     // loadProducts();
     // No, dashboard calls loadProducts().
@@ -59,7 +57,7 @@ class PosCubit extends Cubit<PosState> {
             matchesCategory = product.unit.toLowerCase() != 'kg';
           }
         
-        return matchesQuery;
+        return matchesQuery && matchesCategory;
       }).toList();
 
       emit(currentState.copyWith(

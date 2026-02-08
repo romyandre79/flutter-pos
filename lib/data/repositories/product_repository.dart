@@ -1,4 +1,3 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:flutter_pos_offline/data/database/database_helper.dart';
 import 'package:flutter_pos_offline/data/models/product.dart';
 

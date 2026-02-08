@@ -38,7 +38,7 @@ class SupplierListScreen extends StatelessWidget {
                   return ListView.separated(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     itemCount: state.suppliers.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       final supplier = state.suppliers[index];
                       return Card(
