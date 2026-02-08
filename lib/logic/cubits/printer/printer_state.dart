@@ -21,8 +21,8 @@ class PrinterBluetoothOff extends PrinterState {
 }
 
 class PrinterDevicesLoaded extends PrinterState {
-  final List<BluetoothDevice> devices;
-  final BluetoothDevice? connectedDevice;
+  final List<PrinterInfo> devices;
+  final PrinterInfo? connectedDevice;
   final String paperSize;
   final bool bluetoothEnabled;
   final String? savedPrinterMac;

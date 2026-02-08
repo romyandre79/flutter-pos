@@ -40,6 +40,9 @@ class User extends Equatable {
   final String name;
   final UserRole role;
   final bool isActive;
+  final bool canAccessSuppliers;
+  final bool canAccessItems;
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -50,6 +53,8 @@ class User extends Equatable {
     required this.name,
     required this.role,
     this.isActive = true,
+    this.canAccessSuppliers = false,
+    this.canAccessItems = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -62,6 +67,8 @@ class User extends Equatable {
       'name': name,
       'role': role.value,
       'is_active': isActive ? 1 : 0,
+      'can_access_suppliers': canAccessSuppliers ? 1 : 0,
+      'can_access_items': canAccessItems ? 1 : 0,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -75,6 +82,8 @@ class User extends Equatable {
       name: map['name'] as String,
       role: UserRoleExtension.fromString(map['role'] as String),
       isActive: (map['is_active'] as int?) == 1,
+      canAccessSuppliers: (map['can_access_suppliers'] as int?) == 1,
+      canAccessItems: (map['can_access_items'] as int?) == 1,
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
           : null,
@@ -91,6 +100,8 @@ class User extends Equatable {
     String? name,
     UserRole? role,
     bool? isActive,
+    bool? canAccessSuppliers,
+    bool? canAccessItems,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -101,6 +112,8 @@ class User extends Equatable {
       name: name ?? this.name,
       role: role ?? this.role,
       isActive: isActive ?? this.isActive,
+      canAccessSuppliers: canAccessSuppliers ?? this.canAccessSuppliers,
+      canAccessItems: canAccessItems ?? this.canAccessItems,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -122,6 +135,8 @@ class User extends Equatable {
         name,
         role,
         isActive,
+        canAccessSuppliers,
+        canAccessItems,
         createdAt,
         updatedAt,
       ];

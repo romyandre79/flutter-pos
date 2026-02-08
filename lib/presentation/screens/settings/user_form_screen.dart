@@ -22,6 +22,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
   UserRole _selectedRole = UserRole.kasir;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _canAccessSuppliers = false;
+  bool _canAccessItems = false;
 
   bool get isEditing => widget.user != null;
 
@@ -32,6 +34,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
       _usernameController.text = widget.user!.username;
       _nameController.text = widget.user!.name;
       _selectedRole = widget.user!.role;
+      _canAccessSuppliers = widget.user!.canAccessSuppliers;
+      _canAccessItems = widget.user!.canAccessItems;
     }
   }
 
@@ -45,11 +49,18 @@ class _UserFormScreenState extends State<UserFormScreen> {
 
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
+      // For Kasir, always grant view access to items and suppliers
+      final isKasir = _selectedRole == UserRole.kasir;
+      final canAccessItems = isKasir ? true : _canAccessItems;
+      final canAccessSuppliers = isKasir ? true : _canAccessSuppliers;
+
       if (isEditing) {
         context.read<UserCubit>().updateUser(
               id: widget.user!.id!,
               name: _nameController.text,
               role: _selectedRole,
+              canAccessSuppliers: canAccessSuppliers,
+              canAccessItems: canAccessItems,
             );
       } else {
         context.read<UserCubit>().createUser(
@@ -57,6 +68,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
               password: _passwordController.text,
               name: _nameController.text,
               role: _selectedRole,
+              canAccessSuppliers: canAccessSuppliers,
+              canAccessItems: canAccessItems,
             );
       }
     }
@@ -548,6 +561,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
             _PermissionItem('Orders', 'Full CRUD', true),
             _PermissionItem('Services', 'Full CRUD', true),
             _PermissionItem('Customers', 'Full + Export', true),
+            _PermissionItem('Master Item', 'Full CRUD', true),
+            _PermissionItem('Supplier', 'Full CRUD', true),
             _PermissionItem('Reports', 'Full + Export', true),
             _PermissionItem('Settings', 'Full access', true),
             _PermissionItem('User Management', 'Full CRUD', true),
@@ -557,9 +572,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
             _PermissionItem('Orders', 'Create, View, Update', true),
             _PermissionItem('Services', 'View only', true),
             _PermissionItem('Customers', 'View only', true),
-            _PermissionItem('Reports', 'Tidak bisa akses', false),
-            _PermissionItem('Settings', 'Tidak bisa akses', false),
-            _PermissionItem('User Management', 'Tidak bisa akses', false),
+            _PermissionItem('Master Item', 'View only', true),
+            _PermissionItem('Supplier', 'View only', true),
           ];
 
     return Container(
@@ -616,48 +630,60 @@ class _UserFormScreenState extends State<UserFormScreen> {
           const SizedBox(height: AppSpacing.lg),
 
           // Permissions List
-          ...permissions.map((permission) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: (permission.allowed
-                                ? AppThemeColors.success
-                                : AppThemeColors.error)
-                            .withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        permission.allowed ? Icons.check : Icons.close,
-                        size: 14,
-                        color: permission.allowed
-                            ? AppThemeColors.success
-                            : AppThemeColors.error,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        permission.feature,
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      permission.access,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: permission.allowed
-                            ? AppThemeColors.textSecondary
-                            : AppThemeColors.error,
-                      ),
-                    ),
-                  ],
-                ),
-              )),
+          ...permissions.map((permission) => _buildPermissionRow(permission)),
+
+          // Additional Permissions for Kasir
+          if (!isOwner) ...[
+             // Default disabled permissions visual
+            _buildPermissionRow(_PermissionItem('Reports', 'Tidak bisa akses', false)),
+            _buildPermissionRow(_PermissionItem('Settings', 'Tidak bisa akses', false)),
+            _buildPermissionRow(_PermissionItem('User Management', 'Tidak bisa akses', false)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionRow(_PermissionItem permission) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: (permission.allowed
+                      ? AppThemeColors.success
+                      : AppThemeColors.error)
+                  .withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              permission.allowed ? Icons.check : Icons.close,
+              size: 14,
+              color: permission.allowed
+                  ? AppThemeColors.success
+                  : AppThemeColors.error,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              permission.feature,
+              style: AppTypography.bodyMedium.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            permission.access,
+            style: AppTypography.bodySmall.copyWith(
+              color: permission.allowed
+                  ? AppThemeColors.textSecondary
+                  : AppThemeColors.error,
+            ),
+          ),
         ],
       ),
     );

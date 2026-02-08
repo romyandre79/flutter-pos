@@ -4,6 +4,9 @@ import 'package:flutter_pos_offline/core/theme/app_theme.dart';
 import 'package:flutter_pos_offline/data/models/supplier.dart';
 import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_state.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
 
 class SupplierFormScreen extends StatefulWidget {
   final Supplier? supplier; // If null, it's add mode
@@ -71,7 +74,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Supplier' : 'Add Supplier'),
         actions: [
-          if (isEditing)
+          if (isEditing && context.read<AuthCubit>().state is AuthAuthenticated && (context.read<AuthCubit>().state as AuthAuthenticated).user.role == UserRole.owner)
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {

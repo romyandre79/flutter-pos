@@ -31,6 +31,8 @@ class UserCubit extends Cubit<UserState> {
     required String password,
     required String name,
     required UserRole role,
+    bool canAccessSuppliers = false,
+    bool canAccessItems = false,
   }) async {
     emit(const UserLoading());
 
@@ -40,6 +42,8 @@ class UserCubit extends Cubit<UserState> {
         password: password,
         name: name,
         role: role,
+        canAccessSuppliers: canAccessSuppliers,
+        canAccessItems: canAccessItems,
       );
 
       emit(const UserOperationSuccess('User berhasil ditambahkan'));
@@ -58,6 +62,8 @@ class UserCubit extends Cubit<UserState> {
     required int id,
     required String name,
     required UserRole role,
+    bool canAccessSuppliers = false,
+    bool canAccessItems = false,
   }) async {
     emit(const UserLoading());
 
@@ -66,6 +72,8 @@ class UserCubit extends Cubit<UserState> {
         id: id,
         name: name,
         role: role,
+        canAccessSuppliers: canAccessSuppliers,
+        canAccessItems: canAccessItems,
       );
 
       emit(const UserOperationSuccess('User berhasil diupdate'));

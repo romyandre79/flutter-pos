@@ -1,16 +1,27 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// import 'package:flutter_pos_printer_platform/flutter_pos_printer_platform.dart'; // Removed
 import 'package:flutter_pos_offline/core/services/printer_service.dart';
 import 'package:flutter_pos_offline/data/models/order.dart';
 import 'package:flutter_pos_offline/logic/cubits/printer/printer_state.dart';
 
 class PrinterCubit extends Cubit<PrinterState> {
   final PrinterService _printerService;
+  StreamSubscription<List<PrinterInfo>>? _scanSubscription;
+  List<PrinterInfo> _scannedDevices = [];
 
   PrinterCubit({PrinterService? printerService})
       : _printerService = printerService ?? PrinterService(),
         super(const PrinterInitial());
 
   String get currentPaperSize => _printerService.paperSize;
+
+  @override
+  Future<void> close() {
+    _scanSubscription?.cancel();
+    return super.close();
+  }
 
   /// Initialize and load settings
   Future<void> initialize() async {
@@ -20,98 +31,57 @@ class PrinterCubit extends Cubit<PrinterState> {
 
   /// Load paired devices
   Future<void> loadDevices() async {
+    _scanSubscription?.cancel();
+    _scannedDevices.clear();
+    
     emit(const PrinterLoading());
 
     try {
-      // Check if Bluetooth is enabled with timeout
-      bool isAvailable = false;
-      try {
-        isAvailable = await _printerService.isBluetoothAvailable().timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => false,
-        );
-      } catch (_) {
-        isAvailable = false;
-      }
-
-      // Get saved paper size
+      final isBluetoothAvailable = await _printerService.isBluetoothAvailable();
       final paperSize = await _printerService.getSavedPaperSize();
+      PrinterInfo? connectedDevice = _printerService.connectedDevice;
+      
+      // Determine what to scan
+      // PrinterService handles logic internally now.
 
-      if (!isAvailable) {
-        emit(PrinterDevicesLoaded(
-          devices: const [],
-          paperSize: paperSize,
-          bluetoothEnabled: false,
-        ));
-        return;
-      }
-
-      // Get paired devices with timeout
-      List<BluetoothDevice> devices = [];
-      try {
-        devices = await _printerService.getPairedDevices().timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => [],
-        );
-      } catch (_) {
-        devices = [];
-      }
-
-      // Get saved printer info
-      final savedPrinter = await _printerService.getSavedPrinter();
-      final savedMac = savedPrinter['mac'];
-
-      // Check if currently connected or try to reconnect
-      BluetoothDevice? connectedDevice;
-      try {
-        final isConnected = await _printerService.checkConnection().timeout(
-          const Duration(seconds: 3),
-          onTimeout: () => false,
-        );
-
-        if (isConnected && _printerService.connectedDeviceAddress != null) {
-          connectedDevice = devices.firstWhere(
-            (d) => d.address == _printerService.connectedDeviceAddress,
-            orElse: () => BluetoothDevice(
-              name: _printerService.connectedDeviceName ?? 'Unknown',
-              address: _printerService.connectedDeviceAddress!,
-            ),
-          );
-        } else if (savedMac != null && savedMac.isNotEmpty) {
-          // Find saved device in paired list
-          final savedDevice = devices.where((d) => d.address == savedMac).firstOrNull;
-          if (savedDevice != null) {
-            // Show as saved but not connected
-            connectedDevice = null; // Will show as "tersimpan" in UI
-          }
-        }
-      } catch (_) {
-        // Ignore connection check errors
-      }
-
-      emit(PrinterDevicesLoaded(
-        devices: devices,
+      // Initial emit
+       emit(PrinterDevicesLoaded(
+        devices: [..._scannedDevices],
         connectedDevice: connectedDevice,
         paperSize: paperSize,
-        bluetoothEnabled: true,
-        savedPrinterMac: savedMac,
+        bluetoothEnabled: isBluetoothAvailable,
+        savedPrinterMac: connectedDevice?.address,
       ));
+
+      // Start scanning
+      _scanSubscription = _printerService.scanDevices().listen((devices) {
+          _scannedDevices = devices;
+          // Emit update
+           emit(PrinterDevicesLoaded(
+            devices: [..._scannedDevices],
+            connectedDevice: _printerService.connectedDevice,
+            paperSize: paperSize,
+            bluetoothEnabled: isBluetoothAvailable,
+            savedPrinterMac: _printerService.connectedDevice?.address,
+          ));
+      }, onError: (e) {
+        // scan failed
+      });
+
     } catch (e) {
-      // On any error, emit empty devices list instead of error state
       emit(const PrinterDevicesLoaded(devices: []));
     }
   }
 
   /// Connect to device
-  Future<void> connectDevice(BluetoothDevice device) async {
+  Future<void> connectDevice(PrinterInfo device) async { // Changed type to PrinterInfo
     emit(PrinterConnecting(device.name));
 
     try {
       final success = await _printerService.connect(device);
       if (success) {
         emit(PrinterConnected(device.name));
-        // Reload devices to update connected status
-        await loadDevices();
+        await loadDevices(); 
       } else {
         emit(const PrinterError('Gagal terhubung ke printer'));
         await loadDevices();
@@ -151,15 +121,22 @@ class PrinterCubit extends Cubit<PrinterState> {
     }
   }
 
-  /// Check printer connection status
-  Future<bool> checkConnection() async {
-    return await _printerService.checkConnection();
-  }
-
   /// Set paper size
   Future<void> setPaperSize(String size) async {
     await _printerService.setPaperSize(size);
-    await loadDevices();
+    // Refresh to update state
+    if (state is PrinterDevicesLoaded) {
+      final curr = state as PrinterDevicesLoaded;
+      emit(PrinterDevicesLoaded(
+        devices: curr.devices,
+        connectedDevice: curr.connectedDevice,
+        paperSize: size,
+        bluetoothEnabled: curr.bluetoothEnabled,
+        savedPrinterMac: curr.savedPrinterMac
+      ));
+    } else {
+       await loadDevices();
+    }
   }
 
   /// Print test page
@@ -176,7 +153,7 @@ class PrinterCubit extends Cubit<PrinterState> {
       await loadDevices();
     } catch (e) {
       emit(PrinterError(e.toString().replaceAll('Exception: ', '')));
-      await loadDevices();
+       await loadDevices();
     }
   }
 }

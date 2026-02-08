@@ -7,6 +7,9 @@ import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_c
 import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_state.dart';
 import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
 import 'package:flutter_pos_offline/presentation/screens/purchasing/purchase_order_create_screen.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
 
 class PurchaseOrderListScreen extends StatefulWidget {
   const PurchaseOrderListScreen({super.key});
@@ -97,28 +100,29 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
                            child: Row(
                              mainAxisAlignment: MainAxisAlignment.end,
                              children: [
-                               TextButton(
-                                 onPressed: () {
-                                   showDialog(
-                                     context: context,
-                                     builder: (ctx) => AlertDialog(
-                                       title: const Text('Delete Purchase Order?'),
-                                       content: const Text('Are you sure you want to delete this order?'),
-                                       actions: [
-                                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(ctx);
-                                              context.read<PurchaseOrderCubit>().deletePurchaseOrder(po.id!);
-                                            },
-                                            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                          ),
-                                       ],
-                                     ),
-                                   );
-                                 },
-                                 child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                               ),
+                               if (context.read<AuthCubit>().state is AuthAuthenticated && (context.read<AuthCubit>().state as AuthAuthenticated).user.role == UserRole.owner)
+                                 TextButton(
+                                   onPressed: () {
+                                     showDialog(
+                                       context: context,
+                                       builder: (ctx) => AlertDialog(
+                                         title: const Text('Delete Purchase Order?'),
+                                         content: const Text('Are you sure you want to delete this order?'),
+                                         actions: [
+                                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(ctx);
+                                                context.read<PurchaseOrderCubit>().deletePurchaseOrder(po.id!);
+                                              },
+                                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                            ),
+                                         ],
+                                       ),
+                                     );
+                                   },
+                                   child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                 ),
                                const SizedBox(width: 8),
                                OutlinedButton(
                                  onPressed: () {

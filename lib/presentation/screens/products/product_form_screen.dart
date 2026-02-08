@@ -7,6 +7,9 @@ import 'package:path/path.dart' as path;
 import 'package:flutter_pos_offline/core/theme/app_theme.dart';
 import 'package:flutter_pos_offline/data/models/product.dart';
 import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? product;
@@ -127,6 +130,32 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
   }
 
+  void _deleteProduct() {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Hapus Item?'),
+          content: const Text('Apakah Anda yakin ingin menghapus item ini? Tindakan ini tidak dapat dibatalkan.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx); // Close dialog
+                if (widget.product?.id != null) {
+                   context.read<ProductCubit>().deleteProduct(widget.product!.id!);
+                   Navigator.pop(context); // Close screen
+                }
+              },
+              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,6 +172,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          if (widget.product != null && context.read<AuthCubit>().state is AuthAuthenticated && (context.read<AuthCubit>().state as AuthAuthenticated).user.role == UserRole.owner)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: _deleteProduct,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),

@@ -4,12 +4,13 @@ import 'package:flutter_pos_offline/core/constants/colors.dart'; // Using AppCol
 import 'package:flutter_pos_offline/core/theme/app_theme.dart';
 import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
 import 'package:flutter_pos_offline/core/utils/thousand_separator_formatter.dart';
+import 'package:flutter_pos_offline/data/models/order.dart'; // Add OrderStatus import
 import 'package:flutter_pos_offline/data/models/payment.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PaymentDialog extends StatefulWidget {
   final int totalAmount;
-  final Function(int paidAmount, PaymentMethod paymentMethod) onConfirm;
+  final Function(int paidAmount, PaymentMethod paymentMethod, OrderStatus status) onConfirm; // Update signature
 
   const PaymentDialog({
     super.key,
@@ -24,6 +25,7 @@ class PaymentDialog extends StatefulWidget {
 class _PaymentDialogState extends State<PaymentDialog> {
   late TextEditingController _paymentController;
   PaymentMethod _paymentMethod = PaymentMethod.cash;
+  OrderStatus _orderStatus = OrderStatus.process;
   int _change = 0;
 
   @override
@@ -139,6 +141,27 @@ class _PaymentDialogState extends State<PaymentDialog> {
               }
             },
           ),
+          const SizedBox(height: 16),
+
+          // Order Status Dropdown
+          DropdownButtonFormField<OrderStatus>(
+            value: _orderStatus,
+            decoration: const InputDecoration(
+              labelText: 'Status Order',
+              border: OutlineInputBorder(),
+            ),
+            items: OrderStatus.values.map((status) {
+              return DropdownMenuItem(
+                value: status,
+                child: Text(status.displayName),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => _orderStatus = value);
+              }
+            },
+          ),
           const SizedBox(height: 24),
 
           // Change Display
@@ -183,7 +206,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
         ElevatedButton(
           onPressed: () {
             final paid = ThousandSeparatorFormatter.parseToInt(_paymentController.text);
-            widget.onConfirm(paid, _paymentMethod);
+            widget.onConfirm(paid, _paymentMethod, _orderStatus);
             Navigator.pop(context);
           },
           style: ElevatedButton.styleFrom(

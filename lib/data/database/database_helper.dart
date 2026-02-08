@@ -402,6 +402,28 @@ class DatabaseHelper {
         await db.execute('CREATE INDEX idx_order_items_product ON order_items(product_id)');
       }
     }
+
+    if (oldVersion < 4) {
+      // Add permission columns to users table
+      final columns = await db.rawQuery('PRAGMA table_info(users)');
+      final hasSuppliersColumn = columns.any((col) => col['name'] == 'can_access_suppliers');
+      final hasItemsColumn = columns.any((col) => col['name'] == 'can_access_items');
+
+      if (!hasSuppliersColumn) {
+        await db.execute('ALTER TABLE users ADD COLUMN can_access_suppliers INTEGER DEFAULT 0');
+      }
+
+      if (!hasItemsColumn) {
+        await db.execute('ALTER TABLE users ADD COLUMN can_access_items INTEGER DEFAULT 0');
+      }
+      
+      // Update existing Owner users to have full access
+      await db.rawUpdate('''
+        UPDATE users 
+        SET can_access_suppliers = 1, can_access_items = 1 
+        WHERE role = ?
+      ''', ['owner']);
+    }
   }
 
   // Utility methods

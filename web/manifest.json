@@ -1,6 +1,6 @@
 {
-    "name": "flutter_laundry_offline_app",
-    "short_name": "flutter_laundry_offline_app",
+    "name": "kreatifmajumu_pos_offline",
+    "short_name": "kreatifmajumu_pos_offline",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

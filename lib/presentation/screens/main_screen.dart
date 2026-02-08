@@ -23,6 +23,7 @@ import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.
 import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -37,7 +38,9 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    _orderCubit = OrderCubit()..loadOrders();
+    _orderCubit = OrderCubit(
+      productRepository: context.read<ProductRepository>(),
+    )..loadOrders();
   }
 
   @override
@@ -68,7 +71,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ];
 
-        if (isOwner) {
+        if (isOwner || user.role == UserRole.kasir) {
           navItems.add(
             const BottomNavigationBarItem(
               icon: Icon(Icons.point_of_sale_outlined),
@@ -76,20 +79,18 @@ class _MainScreenState extends State<MainScreen> {
               label: 'Kasir',
             ),
           );
+        }
 
-          navItems.add(
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
-              activeIcon: Icon(Icons.people),
-              label: 'Suppliers',
-            ),
-          );
 
+
+
+
+        if (isOwner) {
           navItems.add(
             const BottomNavigationBarItem(
               icon: Icon(Icons.shopping_bag_outlined),
               activeIcon: Icon(Icons.shopping_bag),
-              label: 'Purchasing',
+              label: 'Pembelian',
             ),
           );
 
@@ -100,10 +101,7 @@ class _MainScreenState extends State<MainScreen> {
               label: 'Laporan',
             ),
           );
-        }
-
-        // Only owner can access settings
-        if (isOwner) {
+        
           navItems.add(
             const BottomNavigationBarItem(
               icon: Icon(Icons.settings_outlined),
@@ -121,7 +119,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ];
 
-        if (isOwner) {
+        if (isOwner || user.role == UserRole.kasir) {
            // Add POS Screen
            screens.add(
             BlocProvider(
@@ -129,20 +127,16 @@ class _MainScreenState extends State<MainScreen> {
                 context.read<ProductRepository>(),
                 context.read<CustomerRepository>(),
               )..loadProducts(),
-              child: PosScreen(), // Removed const
+              child: PosScreen(),
             ),
           );
+        }
 
-          // Add Supplier Screen
-          screens.add(
-            BlocProvider(
-              create: (context) => SupplierCubit(
-                supplierRepository: context.read<SupplierRepository>(),
-              )..loadSuppliers(),
-              child: const SupplierListScreen(),
-            ),
-          );
 
+
+
+
+        if (isOwner) {
           // Add Purchase Order Screen
           screens.add(
             MultiBlocProvider(

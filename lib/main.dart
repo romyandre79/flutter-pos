@@ -82,6 +82,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(
             create: (context) => OrderCubit(
               orderRepository: context.read<OrderRepository>(),
+              productRepository: context.read<ProductRepository>(),
             )..loadOrders(),
           ),
         ],

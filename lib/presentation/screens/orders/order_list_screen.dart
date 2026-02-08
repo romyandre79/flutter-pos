@@ -193,7 +193,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                           borderRadius: AppRadius.smRadius,
                         ),
                         child: const Icon(
-                          Icons.close,
+                          Icons.arrow_back,
                           color: Colors.white,
                           size: 20,
                         ),

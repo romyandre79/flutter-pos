@@ -7,6 +7,7 @@ import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
 import 'package:flutter_pos_offline/core/utils/thousand_separator_formatter.dart';
 import 'package:flutter_pos_offline/data/models/order.dart';
 import 'package:flutter_pos_offline/data/models/payment.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
 import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
 import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
@@ -736,6 +737,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ),
                   ),
                 ),
+                // Delete button for Owner only
+                if (context.read<AuthCubit>().state is AuthAuthenticated && 
+                    (context.read<AuthCubit>().state as AuthAuthenticated).user.role == UserRole.owner) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  GestureDetector(
+                    onTap: () => _showDeleteDialog(order),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppThemeColors.error.withValues(alpha: 0.8),
+                        borderRadius: AppRadius.smRadius,
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ],
           ),
@@ -1512,6 +1534,58 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDeleteDialog(Order order) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.lgRadius,
+        ),
+        title: Text(
+          'Hapus Order',
+          style: AppTypography.titleLarge.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppThemeColors.error,
+          ),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus order ${order.invoiceNo}? Tindakan ini tidak dapat dibatalkan.',
+          style: AppTypography.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Batal',
+              style: AppTypography.labelMedium.copyWith(
+                color: AppThemeColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext); // Close dialog
+              context.read<OrderCubit>().deleteOrder(order.id!);
+              Navigator.pop(context); // Go back to list
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppThemeColors.error,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.smRadius,
+              ),
+            ),
+            child: Text(
+              'Hapus',
+              style: AppTypography.labelMedium.copyWith(
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

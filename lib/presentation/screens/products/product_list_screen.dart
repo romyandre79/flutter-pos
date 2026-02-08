@@ -7,6 +7,9 @@ import 'package:flutter_pos_offline/data/models/product.dart';
 import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/product/product_state.dart';
 import 'package:flutter_pos_offline/presentation/screens/products/product_form_screen.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos_offline/data/models/user.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -270,6 +273,9 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
   }
 
   Widget _buildProductCard(Product product) {
+    final authState = context.read<AuthCubit>().state;
+    final isOwner = authState is AuthAuthenticated && authState.user.role == UserRole.owner;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
@@ -280,7 +286,7 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _navigateToForm(product: product),
+          onTap: isOwner ? () => _navigateToForm(product: product) : null,
           borderRadius: AppRadius.lgRadius,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -388,89 +394,90 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
                     ],
                   ),
                 ),
-                // Actions
-                PopupMenuButton<String>(
-                  icon: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppThemeColors.background,
-                      borderRadius: AppRadius.smRadius,
-                    ),
-                    child: const Icon(
-                      Icons.more_vert,
-                      color: AppThemeColors.textSecondary,
-                      size: 18,
-                    ),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.mdRadius,
-                  ),
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'edit':
-                        _navigateToForm(product: product);
-                        break;
-                      case 'delete':
-                        _showDeleteDialog(product);
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: AppThemeColors.primarySurface,
-                              borderRadius: AppRadius.smRadius,
-                            ),
-                            child: const Icon(
-                              Icons.edit,
-                              size: 16,
-                              color: AppThemeColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            'Edit',
-                            style: AppTypography.bodyMedium,
-                          ),
-                        ],
+                // Actions (Only for Owner)
+                if (isOwner)
+                  PopupMenuButton<String>(
+                    icon: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppThemeColors.background,
+                        borderRadius: AppRadius.smRadius,
+                      ),
+                      child: const Icon(
+                        Icons.more_vert,
+                        color: AppThemeColors.textSecondary,
+                        size: 18,
                       ),
                     ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: AppThemeColors.error.withValues(alpha: 0.1),
-                              borderRadius: AppRadius.smRadius,
-                            ),
-                            child: const Icon(
-                              Icons.delete,
-                              size: 16,
-                              color: AppThemeColors.error,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            'Hapus',
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppThemeColors.error,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.mdRadius,
+                    ),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'edit':
+                          _navigateToForm(product: product);
+                          break;
+                        case 'delete':
+                          _showDeleteDialog(product);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: AppThemeColors.primarySurface,
+                                borderRadius: AppRadius.smRadius,
                               ),
-                          ),
-                        ],
+                              child: const Icon(
+                                Icons.edit,
+                                size: 16,
+                                color: AppThemeColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'Edit',
+                              style: AppTypography.bodyMedium,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: AppThemeColors.error.withValues(alpha: 0.1),
+                                borderRadius: AppRadius.smRadius,
+                              ),
+                              child: const Icon(
+                                Icons.delete,
+                                size: 16,
+                                color: AppThemeColors.error,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'Hapus',
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: AppThemeColors.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -480,6 +487,11 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
   }
 
   Widget _buildFAB() {
+    final authState = context.read<AuthCubit>().state;
+    final isOwner = authState is AuthAuthenticated && authState.user.role == UserRole.owner;
+    
+    if (!isOwner) return const SizedBox.shrink();
+
     return Container(
       decoration: BoxDecoration(
         gradient: AppThemeColors.primaryGradient,

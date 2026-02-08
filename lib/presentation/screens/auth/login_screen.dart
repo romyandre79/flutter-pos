@@ -129,10 +129,12 @@ class _LoginScreenState extends State<LoginScreen>
                                 borderRadius: AppRadius.xlRadius,
                                 boxShadow: AppShadows.large,
                               ),
-                              child: const Icon(
-                                Icons.store,
-                                size: 48,
-                                color: AppThemeColors.primary,
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.md),
+                                child: Image.asset(
+                                  'assets/icons/logopos.png',
+                                  fit: BoxFit.contain,
+                                ),
                               ),
                             ),
 

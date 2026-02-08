@@ -20,14 +20,17 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     _requestPermissionsAndLoad();
   }
 
+
   Future<void> _requestPermissionsAndLoad() async {
-    // Request Bluetooth permissions
-    await [
-      Permission.bluetooth,
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
-      Permission.locationWhenInUse,
-    ].request();
+    // Request Bluetooth permissions only on mobile
+    if (Theme.of(context).platform != TargetPlatform.windows) {
+      await [
+        Permission.bluetooth,
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+        Permission.locationWhenInUse,
+      ].request();
+    }
 
     if (mounted) {
       context.read<PrinterCubit>().loadDevices();
@@ -166,7 +169,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Hubungkan printer Bluetooth',
+                      'Kelola koneksi printer thermal',
                       style: AppTypography.bodySmall.copyWith(
                         color: Colors.white.withValues(alpha: 0.8),
                       ),
@@ -221,7 +224,51 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     );
   }
 
+
   Widget _buildBluetoothStatus(bool isEnabled) {
+    // On Windows, we don't check Bluetooth status
+    if (Theme.of(context).platform == TargetPlatform.windows) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppThemeColors.success.withValues(alpha: 0.1),
+          borderRadius: AppRadius.mdRadius,
+          border: Border.all(
+            color: AppThemeColors.success.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.usb,
+              color: AppThemeColors.success,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Mode USB / Network',
+                    style: AppTypography.labelMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppThemeColors.success,
+                    ),
+                  ),
+                  Text(
+                    'Menampilkan printer yang terhubung via USB',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppThemeColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -345,7 +392,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     );
   }
 
-  Widget _buildConnectedPrinter(BuildContext context, BluetoothDevice device) {
+  Widget _buildConnectedPrinter(BuildContext context, PrinterInfo device) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -394,7 +441,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: AppThemeColors.success.withValues(alpha: 0.1),
+                  color: AppThemeColors.success.withOpacity(0.1),
                   borderRadius: AppRadius.fullRadius,
                 ),
                 child: Text(
@@ -495,7 +542,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     );
   }
 
-  Widget _buildDeviceItem(BuildContext context, BluetoothDevice device) {
+  Widget _buildDeviceItem(BuildContext context, PrinterInfo device) {
     return InkWell(
       onTap: () => context.read<PrinterCubit>().connectDevice(device),
       borderRadius: AppRadius.mdRadius,
@@ -511,10 +558,14 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: AppThemeColors.primary.withValues(alpha: 0.1),
+                color: AppThemeColors.primary.withOpacity(0.1),
                 borderRadius: AppRadius.smRadius,
               ),
-              child: Icon(Icons.print, color: AppThemeColors.primary, size: 20),
+              child: Icon(
+                _getDeviceIcon(device.type),
+                color: AppThemeColors.primary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -541,6 +592,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     );
   }
 
+
   Widget _buildNoDevicesFound() {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -560,7 +612,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Pastikan printer sudah di-pair di Bluetooth',
+            'Pastikan printer menyala dan siap terhubung',
             style: AppTypography.bodySmall.copyWith(
               color: AppThemeColors.textHint,
             ),
@@ -568,6 +620,19 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
         ],
       ),
     );
+  }
+
+  IconData _getDeviceIcon(PrinterType type) {
+    switch (type) {
+      case PrinterType.bluetooth:
+        return Icons.bluetooth;
+      case PrinterType.usb:
+        return Icons.usb;
+      case PrinterType.network:
+        return Icons.wifi;
+      default:
+        return Icons.print;
+    }
   }
 
   Widget _buildEmptyState() {

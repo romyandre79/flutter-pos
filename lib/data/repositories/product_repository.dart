@@ -84,4 +84,11 @@ class ProductRepository {
       whereArgs: [id],
     );
   }
+  Future<void> updateStock(int productId, int quantityChange) async {
+    final db = await _databaseHelper.database;
+    await db.rawUpdate(
+      'UPDATE products SET stock = stock + ?, updated_at = ? WHERE id = ?',
+      [quantityChange, DateTime.now().toIso8601String(), productId],
+    );
+  }
 }

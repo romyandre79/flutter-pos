@@ -12,10 +12,14 @@ import 'package:flutter_pos_offline/logic/cubits/user/user_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
 import 'package:flutter_pos_offline/presentation/screens/settings/user_management_screen.dart';
 import 'package:flutter_pos_offline/presentation/screens/settings/printer_settings_screen.dart';
+import 'package:flutter_pos_offline/logic/cubits/printer/printer_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
 import 'package:flutter_pos_offline/presentation/screens/products/product_list_screen.dart';
 import 'package:flutter_pos_offline/presentation/screens/customers/customer_list_screen.dart';
 import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
+import 'package:flutter_pos_offline/presentation/screens/purchasing/supplier_list_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -431,29 +435,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           ),
 
-                          // Service Management Section
+                            // Service Management Section
                           _buildSection(
                             title: 'Layanan',
                             children: [
+                              if (user != null && (user.role == UserRole.owner || user.canAccessItems))
                                 _buildSettingTile(
-                                context: context,
-                                icon: Icons.category,
-                                title: 'Master Item',
-                                subtitle: 'Kelola produk dan layanan',
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider(
-                                        create: (context) => ProductCubit(
-                                          context.read<ProductRepository>(),
+                                  context: context,
+                                  icon: Icons.category,
+                                  title: 'Master Item',
+                                  subtitle: 'Kelola produk dan layanan',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => BlocProvider(
+                                          create: (context) => ProductCubit(
+                                            context.read<ProductRepository>(),
+                                          ),
+                                          child: const ProductListScreen(),
                                         ),
-                                        child: const ProductListScreen(),
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
+                                    );
+                                  },
+                                ),
+                              if (user != null && (user.role == UserRole.owner || user.canAccessItems) && (user.role == UserRole.owner || user.canAccessSuppliers))
+                                _buildDivider(),
+                              if (user != null && (user.role == UserRole.owner || user.canAccessSuppliers))
+                                _buildSettingTile(
+                                  context: context,
+                                  icon: Icons.people_outline,
+                                  title: 'Supplier',
+                                  subtitle: 'Kelola data supplier',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => BlocProvider(
+                                          create: (context) => SupplierCubit(
+                                            supplierRepository: context.read<SupplierRepository>(),
+                                          )..loadSuppliers(),
+                                          child: const SupplierListScreen(),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                             ],
                           ),
 
@@ -509,13 +536,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 context: context,
                                 icon: Icons.print,
                                 title: 'Pengaturan Printer',
-                                subtitle: 'Coming Soon',
+                                subtitle: 'Atur koneksi printer thermal',
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          const PrinterSettingsScreen(),
+                                      builder: (_) => BlocProvider(
+                                        create: (_) => PrinterCubit(),
+                                        child: const PrinterSettingsScreen(),
+                                      ),
                                     ),
                                   );
                                 },

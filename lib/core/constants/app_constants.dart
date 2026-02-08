@@ -8,7 +8,7 @@ class AppConstants {
 
   // Database
   static const String databaseName = 'pos_offline.db';
-  static const int databaseVersion = 3;
+  static const int databaseVersion = 4;
 
   // Invoice
   static const String defaultInvoicePrefix = 'POS';

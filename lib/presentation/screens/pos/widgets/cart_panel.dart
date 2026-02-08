@@ -10,6 +10,7 @@ import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/pos/pos_state.dart';
 import 'package:flutter_pos_offline/data/models/customer.dart';
 import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
+import 'package:flutter_pos_offline/data/models/order.dart'; // Add OrderStatus import
 import 'package:flutter_pos_offline/presentation/widgets/payment_dialog.dart';
 
 class CartPanel extends StatelessWidget {
@@ -23,9 +24,9 @@ class CartPanel extends StatelessWidget {
       context: context,
       builder: (ctx) => PaymentDialog(
         totalAmount: totalAmount,
-        onConfirm: (paidAmount, paymentMethod) {
+        onConfirm: (paidAmount, paymentMethod, status) {
           // Use the captured cubit
-          _processCheckout(context, posCubit, paidAmount, paymentMethod);
+          _processCheckout(context, posCubit, paidAmount, paymentMethod, status);
         },
       ),
     );
@@ -36,6 +37,7 @@ class CartPanel extends StatelessWidget {
     PosCubit posCubit,
     int paidAmount,
     PaymentMethod paymentMethod,
+    OrderStatus status,
   ) {
     final posState = posCubit.state;
     if (posState is! PosLoaded) return;
@@ -64,6 +66,7 @@ class CartPanel extends StatelessWidget {
       dueDate: DateTime.now(), // Completed immediately
       initialPayment: paidAmount,
       paymentMethod: paymentMethod,
+      status: status,
       createdBy: 1, // TODO: Get from AuthCubit
     );
   }
@@ -119,31 +122,7 @@ class CartPanel extends StatelessWidget {
                     'Current Order',
                     style: AppTypography.titleMedium,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: AppThemeColors.error),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Clear Cart?'),
-                          content: const Text('Are you sure you want to remove all items?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                context.read<PosCubit>().clearCart();
-                                Navigator.pop(ctx);
-                              },
-                              child: const Text('Clear', style: TextStyle(color: AppThemeColors.error)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+
                 ],
               ),
             ),
@@ -270,7 +249,7 @@ class CartPanel extends StatelessWidget {
                             ? () => _handleCharge(context, total)
                             : null,
                           child: Text(
-                             total > 0 ? 'Charge ${CurrencyFormatter.format(total)}' : 'Charge',
+                             total > 0 ? 'Charge ${CurrencyFormatter.format(total)}' : 'Bayar',
                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),

@@ -1,4 +1,4 @@
-package com.prismadataabadi.flutter_laundry_offline_app
+package com.prismadataabadi.kreatifmajumu_pos_offline
 
 import io.flutter.embedding.android.FlutterActivity
 

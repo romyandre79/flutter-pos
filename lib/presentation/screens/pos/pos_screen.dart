@@ -15,6 +15,34 @@ class PosScreen extends StatelessWidget {
         title: const Text('New Transaction'),
         centerTitle: false,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: AppThemeColors.error),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Clear Cart?'),
+                  content: const Text('Are you sure you want to remove all items?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        context.read<PosCubit>().clearCart();
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Clear', style: TextStyle(color: AppThemeColors.error)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Row(
         children: [

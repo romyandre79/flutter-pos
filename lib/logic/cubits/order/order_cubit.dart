@@ -6,12 +6,14 @@ import 'package:flutter_pos_offline/data/models/payment.dart';
 import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/order_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/payment_repository.dart';
+import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
 import 'package:flutter_pos_offline/logic/cubits/order/order_state.dart';
 
 class OrderCubit extends Cubit<OrderState> {
   final OrderRepository _orderRepository;
   final PaymentRepository _paymentRepository;
   final CustomerRepository _customerRepository;
+  final ProductRepository _productRepository;
   List<Order> _orders = [];
   OrderStatus? _currentFilter;
   static const int _pageSize = 20;
@@ -21,9 +23,11 @@ class OrderCubit extends Cubit<OrderState> {
     OrderRepository? orderRepository,
     PaymentRepository? paymentRepository,
     CustomerRepository? customerRepository,
+    ProductRepository? productRepository,
   })  : _orderRepository = orderRepository ?? OrderRepository(),
         _paymentRepository = paymentRepository ?? PaymentRepository(),
         _customerRepository = customerRepository ?? CustomerRepository(),
+        _productRepository = productRepository ?? ProductRepository(),
         super(const OrderInitial());
 
   List<Order> get orders => _orders;
@@ -108,6 +112,7 @@ class OrderCubit extends Cubit<OrderState> {
     int? createdBy,
     int initialPayment = 0,
     PaymentMethod paymentMethod = PaymentMethod.cash,
+    OrderStatus status = OrderStatus.pending,
   }) async {
     emit(const OrderLoading());
 
@@ -167,7 +172,7 @@ class OrderCubit extends Cubit<OrderState> {
         customerPhone: customerPhone?.trim(),
         orderDate: DateTime.now(),
         dueDate: dueDate,
-        status: OrderStatus.pending,
+        status: status,
         totalItems: totalItems,
         totalWeight: totalWeight,
         totalPrice: totalPrice,
@@ -195,6 +200,13 @@ class OrderCubit extends Cubit<OrderState> {
         items: items.map((item) => item.copyWith(orderId: 0)).toList(),
         initialPayment: payment,
       );
+
+      // Deduct stock for each item
+      for (final item in items) {
+        if (item.productId != null) {
+          await _productRepository.updateStock(item.productId!, -(item.quantity.toInt()));
+        }
+      }
 
       emit(OrderCreated(createdOrder));
 

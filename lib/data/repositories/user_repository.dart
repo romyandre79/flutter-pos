@@ -59,6 +59,8 @@ class UserRepository {
     required String password,
     required String name,
     required UserRole role,
+    bool canAccessSuppliers = false,
+    bool canAccessItems = false,
   }) async {
     final db = await _databaseHelper.database;
 
@@ -91,6 +93,8 @@ class UserRepository {
       'name': name.trim(),
       'role': role.value,
       'is_active': 1,
+      'can_access_suppliers': canAccessSuppliers ? 1 : 0,
+      'can_access_items': canAccessItems ? 1 : 0,
       'created_at': now,
       'updated_at': now,
     });
@@ -102,6 +106,8 @@ class UserRepository {
       name: name.trim(),
       role: role,
       isActive: true,
+      canAccessSuppliers: canAccessSuppliers,
+      canAccessItems: canAccessItems,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -112,6 +118,8 @@ class UserRepository {
     required int id,
     required String name,
     required UserRole role,
+    bool canAccessSuppliers = false,
+    bool canAccessItems = false,
   }) async {
     final db = await _databaseHelper.database;
 
@@ -128,6 +136,8 @@ class UserRepository {
       {
         'name': name.trim(),
         'role': role.value,
+        'can_access_suppliers': canAccessSuppliers ? 1 : 0,
+        'can_access_items': canAccessItems ? 1 : 0,
         'updated_at': now,
       },
       where: 'id = ?',
@@ -137,6 +147,8 @@ class UserRepository {
     return existing.copyWith(
       name: name.trim(),
       role: role,
+      canAccessSuppliers: canAccessSuppliers,
+      canAccessItems: canAccessItems,
       updatedAt: DateTime.now(),
     );
   }
