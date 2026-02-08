@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // import 'package:flutter_pos_printer_platform/flutter_pos_printer_platform.dart'; // Removed
 import 'package:flutter_pos_offline/core/services/printer_service.dart';

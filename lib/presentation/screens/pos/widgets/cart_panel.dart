@@ -158,7 +158,7 @@ class CartPanel extends StatelessWidget {
                     return ListView.separated(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       itemCount: state.cartItems.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final item = state.cartItems[index];
                         return Padding(

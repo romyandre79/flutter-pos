@@ -71,101 +71,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  void _showStatusUpdateDialog(Order order) {
-    final nextStatuses = order.getNextStatusOptions();
-    if (nextStatuses.isEmpty) return;
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (bottomContext) => Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Ubah Status',
-              style: AppTypography.titleLarge.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ...nextStatuses.map((status) {
-              final color = _getStatusColor(status);
-              return Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: AppRadius.mdRadius,
-                  border: Border.all(color: color.withValues(alpha: 0.3)),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.pop(bottomContext);
-                      context.read<OrderCubit>().updateStatus(order.id!, status);
-                    },
-                    borderRadius: AppRadius.mdRadius,
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.2),
-                              borderRadius: AppRadius.smRadius,
-                            ),
-                            child: Icon(
-                              _getStatusIcon(status),
-                              color: color,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _getStatusLabel(status),
-                                  style: AppTypography.titleSmall.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: color,
-                                  ),
-                                ),
-                                Text(
-                                  status.description,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppThemeColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: color,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: AppSpacing.md),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _shareViaWhatsApp(Order order) async {
     if (order.customerPhone == null || order.customerPhone!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -201,18 +106,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               title: 'Kirim Struk',
               subtitle: 'Kirim struk order lengkap',
               onTap: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(bottomContext);
                 try {
                   await WhatsAppService().shareOrderReceipt(order);
                 } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(e.toString().replaceAll('Exception: ', '')),
-                        backgroundColor: AppThemeColors.error,
-                      ),
-                    );
-                  }
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: AppThemeColors.error,
+                    ),
+                  );
                 }
               },
             ),
@@ -223,18 +127,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 title: 'Notifikasi Siap Ambil',
                 subtitle: 'Beritahu pelanggan pesanan sudah siap',
                 onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   Navigator.pop(bottomContext);
                   try {
                     await WhatsAppService().sendOrderNotification(order, 'ready');
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(e.toString().replaceAll('Exception: ', '')),
-                          backgroundColor: AppThemeColors.error,
-                        ),
-                      );
-                    }
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                        backgroundColor: AppThemeColors.error,
+                      ),
+                    );
                   }
                 },
               ),
@@ -245,18 +148,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 title: 'Notifikasi Proses',
                 subtitle: 'Beritahu pelanggan pesanan sedang diproses',
                 onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   Navigator.pop(bottomContext);
                   try {
                     await WhatsAppService().sendOrderNotification(order, 'process');
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(e.toString().replaceAll('Exception: ', '')),
-                          backgroundColor: AppThemeColors.error,
-                        ),
-                      );
-                    }
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                        backgroundColor: AppThemeColors.error,
+                      ),
+                    );
                   }
                 },
               ),
@@ -461,7 +363,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
               const SizedBox(height: AppSpacing.md),
               DropdownButtonFormField<PaymentMethod>(
-                value: selectedMethod,
+                initialValue: selectedMethod,
                 decoration: InputDecoration(
                   labelText: 'Metode',
                   labelStyle: AppTypography.bodyMedium,

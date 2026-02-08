@@ -96,7 +96,7 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
             return ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: state.purchaseOrders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, index) {
                 final po = state.purchaseOrders[index];
                 return Card(

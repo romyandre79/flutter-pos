@@ -6,19 +6,14 @@ import 'package:flutter_pos_offline/data/models/order.dart';
 import 'package:flutter_pos_offline/data/models/user.dart';
 import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/dashboard/dashboard_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/dashboard/dashboard_state.dart';
 import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/service/service_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/printer/printer_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/orders/order_form_screen.dart';
 import 'package:flutter_pos_offline/presentation/screens/orders/order_detail_screen.dart';
 import 'package:flutter_pos_offline/presentation/screens/orders/order_list_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/services/service_list_screen.dart';
 import 'package:flutter_pos_offline/presentation/screens/settings/printer_settings_screen.dart';
 import 'package:flutter_pos_offline/presentation/widgets/order_card.dart';
-import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
 import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
 import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_cubit.dart';
@@ -27,7 +22,6 @@ import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.
 import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
 import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
 import 'package:flutter_pos_offline/presentation/screens/pos/pos_screen.dart';
-import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -379,7 +373,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       builder: (_) => BlocProvider(
                         create: (context) => PosCubit(
                           context.read<ProductRepository>(),
-                          context.read<CustomerRepository>(),
                         )..loadProducts(),
                         child: PosScreen(),
                       ),
@@ -506,6 +499,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            _buildStatusItem(
+              'Pending',
+              counts[OrderStatus.pending] ?? 0,
+              AppThemeColors.warning,
+            ),
+            _buildStatusDivider(),
+            _buildStatusItem(
+              'Proses',
+              counts[OrderStatus.process] ?? 0,
+              AppThemeColors.primary,
+            ),
+            _buildStatusDivider(),
+            _buildStatusItem(
+              'Siap',
+              counts[OrderStatus.ready] ?? 0,
+              AppThemeColors.success,
+            ),
+            _buildStatusDivider(),
+            _buildStatusItem(
+              'Selesai',
+              counts[OrderStatus.done] ?? 0,
+              AppThemeColors.completed,
+            ),
+          ],
+        ),
       ],
     );
   }

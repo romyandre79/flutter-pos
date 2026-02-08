@@ -8,13 +8,10 @@ import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/user/user_cubit.dart';
 import 'package:flutter_pos_offline/logic/cubits/report/report_cubit.dart';
 import 'package:flutter_pos_offline/presentation/screens/dashboard/dashboard_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/orders/order_list_screen.dart';
 import 'package:flutter_pos_offline/presentation/screens/reports/report_screen.dart';
 import 'package:flutter_pos_offline/presentation/screens/settings/settings_screen.dart';
 import 'package:flutter_pos_offline/presentation/screens/pos/pos_screen.dart';
 import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
-import 'package:flutter_pos_offline/data/repositories/service_repository.dart';
-import 'package:flutter_pos_offline/presentation/screens/purchasing/supplier_list_screen.dart';
 import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
 import 'package:flutter_pos_offline/presentation/screens/purchasing/purchase_order_list_screen.dart';
 import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_cubit.dart';
@@ -130,7 +127,6 @@ class _MainScreenState extends State<MainScreen> {
             BlocProvider(
               create: (context) => PosCubit(
                 context.read<ProductRepository>(),
-                context.read<CustomerRepository>(),
               )..loadProducts(),
               child: PosScreen(),
             ),
