@@ -13,6 +13,9 @@ class SettingsCubit extends Cubit<SettingsState> {
   StoreInfo? _currentInfo;
   StoreInfo? get currentInfo => _currentInfo;
 
+  PlantInfo? _currentPlantInfo;
+  PlantInfo? get currentPlantInfo => _currentPlantInfo;
+
   Future<void> loadSettings() async {
     emit(SettingsLoading());
 
@@ -28,12 +31,101 @@ class SettingsCubit extends Cubit<SettingsState> {
             AppConstants.defaultStorePhone,
         invoicePrefix: settings[AppConstants.keyInvoicePrefix] ??
             AppConstants.defaultInvoicePrefix,
+        machineNumber: settings[AppConstants.keyMachineNumber] ??
+            AppConstants.defaultMachineNumber,
+      );
+
+      final plantInfo = PlantInfo(
+        name: settings[AppConstants.keyPlantName] ?? '',
+        address: settings[AppConstants.keyPlantAddress] ?? '',
+        code: settings[AppConstants.keyPlantCode] ?? '',
       );
 
       _currentInfo = storeInfo;
-      emit(SettingsLoaded(storeInfo: storeInfo));
+      _currentPlantInfo = plantInfo;
+      emit(SettingsLoaded(storeInfo: storeInfo, plantInfo: plantInfo));
     } catch (e) {
       emit(SettingsError(message: 'Gagal memuat pengaturan: ${e.toString()}'));
+    }
+  }
+
+  // ... (existing store update methods) ...
+  
+  // Update Machine Number
+  Future<void> updateMachineNumber(String number) async {
+    if (number.trim().isEmpty) {
+      emit(const SettingsError(message: 'Machine Number tidak boleh kosong'));
+      return;
+    }
+
+    emit(SettingsUpdating());
+    try {
+      await _repository.setSetting(AppConstants.keyMachineNumber, number.trim());
+      
+      final updatedInfo = _currentInfo!.copyWith(machineNumber: number.trim());
+      _currentInfo = updatedInfo;
+
+      emit(SettingsUpdated(
+        message: 'Machine Number berhasil diperbarui',
+        storeInfo: updatedInfo,
+        plantInfo: _currentPlantInfo,
+      ));
+    } catch (e) {
+      emit(SettingsError(message: 'Gagal update machine number: ${e.toString()}'));
+    }
+  }
+
+  Future<void> updatePlantName(String name) async {
+    emit(SettingsUpdating());
+    try {
+      await _repository.setSetting(AppConstants.keyPlantName, name.trim());
+      
+      final updatedInfo = _currentPlantInfo!.copyWith(name: name.trim());
+      _currentPlantInfo = updatedInfo;
+
+      emit(SettingsUpdated(
+        message: 'Nama plant berhasil diperbarui',
+        storeInfo: _currentInfo!,
+        plantInfo: updatedInfo,
+      ));
+    } catch (e) {
+      emit(SettingsError(message: 'Gagal update plant name: ${e.toString()}'));
+    }
+  }
+
+  Future<void> updatePlantAddress(String address) async {
+    emit(SettingsUpdating());
+    try {
+      await _repository.setSetting(AppConstants.keyPlantAddress, address.trim());
+      
+      final updatedInfo = _currentPlantInfo!.copyWith(address: address.trim());
+      _currentPlantInfo = updatedInfo;
+
+      emit(SettingsUpdated(
+        message: 'Alamat plant berhasil diperbarui',
+        storeInfo: _currentInfo!,
+        plantInfo: updatedInfo,
+      ));
+    } catch (e) {
+      emit(SettingsError(message: 'Gagal update plant address: ${e.toString()}'));
+    }
+  }
+
+  Future<void> updatePlantCode(String code) async {
+    emit(SettingsUpdating());
+    try {
+      await _repository.setSetting(AppConstants.keyPlantCode, code.trim());
+      
+      final updatedInfo = _currentPlantInfo!.copyWith(code: code.trim());
+      _currentPlantInfo = updatedInfo;
+
+      emit(SettingsUpdated(
+        message: 'Kode plant berhasil diperbarui',
+        storeInfo: _currentInfo!,
+        plantInfo: updatedInfo,
+      ));
+    } catch (e) {
+      emit(SettingsError(message: 'Gagal update plant code: ${e.toString()}'));
     }
   }
 
@@ -54,6 +146,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       emit(SettingsUpdated(
         message: 'Nama toko berhasil diperbarui',
         storeInfo: updatedInfo,
+        plantInfo: _currentPlantInfo,
       ));
     } catch (e) {
       emit(SettingsError(message: 'Gagal memperbarui nama: ${e.toString()}'));
@@ -78,6 +171,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       emit(SettingsUpdated(
         message: 'Alamat berhasil diperbarui',
         storeInfo: updatedInfo,
+        plantInfo: _currentPlantInfo,
       ));
     } catch (e) {
       emit(SettingsError(message: 'Gagal memperbarui alamat: ${e.toString()}'));
@@ -101,6 +195,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       emit(SettingsUpdated(
         message: 'Nomor HP berhasil diperbarui',
         storeInfo: updatedInfo,
+        plantInfo: _currentPlantInfo,
       ));
     } catch (e) {
       emit(
@@ -132,6 +227,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       emit(SettingsUpdated(
         message: 'Prefix invoice berhasil diperbarui',
         storeInfo: updatedInfo,
+        plantInfo: _currentPlantInfo,
       ));
     } catch (e) {
       emit(SettingsError(

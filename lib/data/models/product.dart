@@ -47,6 +47,7 @@ class Product extends Equatable {
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final int? serverId;
 
   const Product({
     this.id,
@@ -62,6 +63,7 @@ class Product extends Equatable {
     this.isActive = true,
     this.createdAt,
     this.updatedAt,
+    this.serverId,
   });
 
   bool get isService => type == ProductType.service;
@@ -82,6 +84,7 @@ class Product extends Equatable {
       'is_active': isActive ? 1 : 0,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'server_id': serverId,
     };
   }
 
@@ -104,6 +107,7 @@ class Product extends Equatable {
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
           : null,
+      serverId: map['server_id'] as int?,
     );
   }
 
@@ -121,6 +125,7 @@ class Product extends Equatable {
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? serverId,
   }) {
     return Product(
       id: id ?? this.id,
@@ -136,6 +141,7 @@ class Product extends Equatable {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      serverId: serverId ?? this.serverId,
     );
   }
 
@@ -154,5 +160,6 @@ class Product extends Equatable {
         isActive,
         createdAt,
         updatedAt,
+        serverId,
       ];
 }

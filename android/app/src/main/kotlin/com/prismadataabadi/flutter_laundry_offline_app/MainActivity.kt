@@ -1,4 +1,4 @@
-package com.kreatifmajumu.kreatifmajumu_pos_offline
+package com.kreatifmajumu.kreatifmajumu_pos
 
 import io.flutter.embedding.android.FlutterActivity
 

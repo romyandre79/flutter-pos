@@ -18,6 +18,8 @@ class SessionService {
     return _instance!;
   }
 
+  static String? _cachedPassword;
+
   /// Save user session after successful login
   Future<void> saveSession({
     required int userId,
@@ -30,6 +32,21 @@ class SessionService {
     await _prefs!.setString(_keyUserRole, role);
     await _prefs!.setString(_keyUserName, name);
     await _prefs!.setBool(_keyIsLoggedIn, true);
+  }
+
+  /// Cache password in memory for sync operations
+  void cachePassword(String password) {
+    _cachedPassword = password;
+  }
+
+  /// Get cached password
+  String? getCachedPassword() {
+    return _cachedPassword;
+  }
+
+  /// Check if we have credentials for sync
+  bool hasCachedCredentials() {
+    return getUsername() != null && _cachedPassword != null;
   }
 
   /// Get saved user ID
@@ -64,6 +81,7 @@ class SessionService {
     await _prefs!.remove(_keyUserRole);
     await _prefs!.remove(_keyUserName);
     await _prefs!.setBool(_keyIsLoggedIn, false);
+    _cachedPassword = null;
   }
 
   /// Get all session data as Map
@@ -74,6 +92,7 @@ class SessionService {
       'role': getUserRole(),
       'name': getUserName(),
       'isLoggedIn': isLoggedIn(),
+      'hasCachedCredentials': hasCachedCredentials(),
     };
   }
 }

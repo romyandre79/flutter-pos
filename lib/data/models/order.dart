@@ -78,6 +78,9 @@ class Order extends Equatable {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  final int isSynced;
+  final int? serverId;
+
   // Relations (loaded separately)
   final List<OrderItem>? items;
   final List<Payment>? payments;
@@ -99,6 +102,8 @@ class Order extends Equatable {
     this.createdBy,
     this.createdAt,
     this.updatedAt,
+    this.isSynced = 0,
+    this.serverId,
     this.items,
     this.payments,
   });
@@ -121,6 +126,8 @@ class Order extends Equatable {
       'created_by': createdBy,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'is_synced': isSynced,
+      'server_id': serverId,
     };
   }
 
@@ -148,6 +155,8 @@ class Order extends Equatable {
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
           : null,
+      isSynced: (map['is_synced'] as int?) ?? 0,
+      serverId: map['server_id'] as int?,
     );
   }
 
@@ -168,6 +177,8 @@ class Order extends Equatable {
     int? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? isSynced,
+    int? serverId,
     List<OrderItem>? items,
     List<Payment>? payments,
   }) {
@@ -188,6 +199,8 @@ class Order extends Equatable {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
+      serverId: serverId ?? this.serverId,
       items: items ?? this.items,
       payments: payments ?? this.payments,
     );
@@ -253,5 +266,7 @@ class Order extends Equatable {
         createdBy,
         createdAt,
         updatedAt,
+        isSynced,
+        serverId,
       ];
 }

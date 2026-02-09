@@ -10,14 +10,16 @@ class InvoiceGenerator {
     final db = await DatabaseHelper.instance.database;
     final today = DateTime.now();
     final dateStr = DateFormatter.formatForInvoice(today);
-    final todayStr = DateFormatter.formatIsoDate(today);
+
 
     // Get settings
     final settingsResult = await db.query(
       'app_settings',
-      where: 'key IN (?, ?, ?)',
+      where: 'key IN (?, ?, ?, ?, ?)',
       whereArgs: [
         AppConstants.keyInvoicePrefix,
+        AppConstants.keyPlantCode,
+        AppConstants.keyMachineNumber,
         AppConstants.keyLastInvoiceDate,
         AppConstants.keyLastInvoiceNumber,
       ],
@@ -27,12 +29,17 @@ class InvoiceGenerator {
       settingsResult.map((e) => MapEntry(e['key'] as String, e['value'] as String)),
     );
 
+    // Default prefix is POS if not set, or user standard
     final prefix = settings[AppConstants.keyInvoicePrefix] ?? AppConstants.defaultInvoicePrefix;
+    final plantCode = settings[AppConstants.keyPlantCode] ?? '';
+    final machineNumber = settings[AppConstants.keyMachineNumber] ?? AppConstants.defaultMachineNumber;
+    
     final lastDate = settings[AppConstants.keyLastInvoiceDate] ?? '';
     final lastNumber = int.parse(settings[AppConstants.keyLastInvoiceNumber] ?? '0');
 
     int nextNumber;
-    if (lastDate == todayStr) {
+    // Check if date changed (using yyMMdd format comparison)
+    if (lastDate == dateStr) {
       // Same day, increment
       nextNumber = lastNumber + 1;
     } else {
@@ -43,15 +50,32 @@ class InvoiceGenerator {
     // Update settings
     await db.rawInsert('''
       INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)
-    ''', [AppConstants.keyLastInvoiceDate, todayStr]);
+    ''', [AppConstants.keyLastInvoiceDate, dateStr]);
 
     await db.rawInsert('''
       INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)
     ''', [AppConstants.keyLastInvoiceNumber, nextNumber.toString()]);
 
-    // Format: LNDR-260115-0001
-    final paddedNumber = nextNumber.toString().padLeft(AppConstants.invoiceNumberLength, '0');
-    return '$prefix-$dateStr-$paddedNumber';
+    // Format: POS-[plant code]-[machine-number]-ddmmyy-[running number]
+    // Note: User requested ddmmyy. DateFormatter.formatForInvoice is yyMMdd. 
+    // Let's check DateFormatter.
+    // If formatForInvoice is yyMMdd, I should maybe change it or format it manually here.
+    // User asked for: ddmmyy
+    final day = today.day.toString().padLeft(2, '0');
+    final month = today.month.toString().padLeft(2, '0');
+    final year = (today.year % 100).toString().padLeft(2, '0');
+    final dateToken = '$day$month$year';
+
+    // Running number padding (e.g. 0001)
+    final paddedNumber = nextNumber.toString().padLeft(4, '0');
+    
+    // Construct Invoice
+    // If plantCode is empty, handle gracefully? User pattern suggests it might be there.
+    // Format: POS-PLANT-MACHINE-DDMMYY-NNNN
+    final partPlant = plantCode.isNotEmpty ? '$plantCode-' : '';
+    // machineNumber is likely '01', so it's always there.
+    
+    return '$prefix-$partPlant$machineNumber-$dateToken-$paddedNumber';
   }
 
   /// Validate invoice format

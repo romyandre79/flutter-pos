@@ -24,6 +24,9 @@ import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/payment_repository.dart'; // Add import
 import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
 import 'package:flutter_pos_offline/core/services/notification_service.dart';
+import 'package:flutter_pos_offline/core/api/api_service.dart';
+import 'package:flutter_pos_offline/core/services/sync_service.dart';
+import 'package:flutter_pos_offline/logic/sync/sync_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,6 +78,13 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (_) => PurchaseOrderRepository()),
         RepositoryProvider(create: (_) => ProductRepository()),         
         RepositoryProvider(create: (_) => PaymentRepository()), // Add PaymentRepository
+        RepositoryProvider(create: (_) => ApiService()),
+        RepositoryProvider(
+          create: (context) => SyncService(
+            apiService: context.read<ApiService>(),
+            dbHelper: DatabaseHelper.instance,
+          ),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -90,6 +100,11 @@ class MyApp extends StatelessWidget {
               customerRepository: context.read<CustomerRepository>(), // Inject CustomerRepository
               paymentRepository: context.read<PaymentRepository>(), // Inject PaymentRepository
             )..loadOrders(),
+          ),
+          BlocProvider(
+            create: (context) => SyncCubit(
+              context.read<SyncService>(),
+            ),
           ),
         ],
         child: MaterialApp(

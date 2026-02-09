@@ -11,6 +11,7 @@ class Customer extends Equatable {
   final DateTime? lastOrderDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final int? serverId;
 
   const Customer({
     this.id,
@@ -23,6 +24,7 @@ class Customer extends Equatable {
     this.lastOrderDate,
     this.createdAt,
     this.updatedAt,
+    this.serverId,
   });
 
   Map<String, dynamic> toMap() {
@@ -37,6 +39,7 @@ class Customer extends Equatable {
       'last_order_date': lastOrderDate?.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'server_id': serverId,
     };
   }
 
@@ -58,6 +61,7 @@ class Customer extends Equatable {
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
           : null,
+      serverId: map['server_id'] as int?,
     );
   }
 
@@ -72,6 +76,7 @@ class Customer extends Equatable {
     DateTime? lastOrderDate,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? serverId,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -84,6 +89,7 @@ class Customer extends Equatable {
       lastOrderDate: lastOrderDate ?? this.lastOrderDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      serverId: serverId ?? this.serverId,
     );
   }
 
@@ -119,5 +125,6 @@ class Customer extends Equatable {
         lastOrderDate,
         createdAt,
         updatedAt,
+        serverId,
       ];
 }

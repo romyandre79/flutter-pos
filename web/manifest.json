@@ -1,6 +1,6 @@
 {
-    "name": "kreatifmajumu_pos_offline",
-    "short_name": "kreatifmajumu_pos_offline",
+    "name": "kreatifmajumu_pos",
+    "short_name": "kreatifmajumu_pos",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

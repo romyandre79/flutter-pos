@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:flutter_pos_offline/core/api/api_config.dart';
 import 'package:flutter_pos_offline/core/constants/app_constants.dart';
 import 'package:flutter_pos_offline/core/theme/app_theme.dart';
 import 'package:flutter_pos_offline/data/models/user.dart';
@@ -20,6 +21,10 @@ import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
 import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
 import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
 import 'package:flutter_pos_offline/presentation/screens/purchasing/supplier_list_screen.dart';
+import 'package:flutter_pos_offline/logic/sync/sync_cubit.dart';
+import 'package:flutter_pos_offline/logic/sync/sync_state.dart';
+import 'package:flutter_pos_offline/core/api/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -44,12 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String _getRoleDisplayName(UserRole role) {
-    switch (role) {
-      case UserRole.owner:
-        return 'Owner';
-      case UserRole.kasir:
-        return 'Kasir';
-    }
+    return role.displayName;
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -295,6 +295,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showServerUrlDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentUrl = prefs.getString('api_base_url') ?? ApiConfig.baseUrl;
+    
+    _showEditDialog(
+      title: 'Server URL',
+      currentValue: currentUrl,
+      hint: 'https://api.example.com',
+      icon: Icons.cloud,
+      onSave: (value) async {
+        await prefs.setString('api_base_url', value);
+        if (mounted) {
+          context.read<ApiService>().setBaseUrl(value);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Server URL updated'),
+              backgroundColor: AppThemeColors.success,
+            ),
+          );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -338,6 +362,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }
           },
         ),
+        BlocListener<SyncCubit, SyncState>(
+          listener: (context, state) {
+            if (state is SyncSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppThemeColors.success,
+                ),
+              );
+            } else if (state is SyncFailure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.error),
+                  backgroundColor: AppThemeColors.error,
+                ),
+              );
+            } else if (state is SyncLoading) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppThemeColors.info,
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            }
+          },
+        ),
       ],
       child: Scaffold(
         backgroundColor: AppThemeColors.background,
@@ -357,18 +408,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     builder: (context, settingsState) {
                       // Get store info from state
                       StoreInfo? storeInfo;
+                      PlantInfo? plantInfo;
+
                       if (settingsState is SettingsLoaded) {
                         storeInfo = settingsState.storeInfo;
+                        plantInfo = settingsState.plantInfo;
                       } else if (settingsState is SettingsUpdated) {
                         storeInfo = settingsState.storeInfo;
+                        plantInfo = settingsState.plantInfo;
                       } else {
                         storeInfo = _settingsCubit.currentInfo;
+                        plantInfo = _settingsCubit.currentPlantInfo;
                       }
 
                       return ListView(
                         padding: EdgeInsets.zero,
                         children: [
                           const SizedBox(height: AppSpacing.lg),
+
+                          // Server Sync Section
+                          _buildSection(
+                            title: 'Server Sync',
+                            children: [
+                              _buildSettingTile(
+                                context: context,
+                                icon: Icons.cloud,
+                                title: 'Server URL',
+                                subtitle: 'Atur URL server untuk sinkronisasi',
+                                onTap: _showServerUrlDialog,
+                              ),
+                              _buildDivider(),
+                              _buildSettingTile(
+                                context: context,
+                                icon: Icons.sync,
+                                title: 'Sync Data',
+                                subtitle: 'Upload transaksi & download master data',
+                                onTap: () {
+                                  context.read<SyncCubit>().syncData();
+                                },
+                              ),
+                            ],
+                          ),
 
                           // Store Info Section
                           _buildSection(
@@ -434,6 +514,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ],
                           ),
+
+                          // Plant Info Section (Owner only)
+                          if (user != null && user.role == UserRole.owner)
+                            _buildSection(
+                              title: 'Plant Information',
+                              children: [
+                                _buildSettingTile(
+                                  context: context,
+                                  icon: Icons.business,
+                                  title: 'Plant Name',
+                                  subtitle: plantInfo?.name.isNotEmpty == true
+                                      ? plantInfo!.name
+                                      : '-',
+                                  onTap: () => _showEditDialog(
+                                    title: 'Edit Plant Name',
+                                    currentValue: plantInfo?.name ?? '',
+                                    hint: 'Masukkan nama plant',
+                                    icon: Icons.business,
+                                    onSave: (value) =>
+                                        _settingsCubit.updatePlantName(value),
+                                  ),
+                                ),
+                                _buildDivider(),
+                                _buildSettingTile(
+                                  context: context,
+                                  icon: Icons.location_city,
+                                  title: 'Plant Address',
+                                  subtitle: plantInfo?.address.isNotEmpty == true
+                                      ? plantInfo!.address
+                                      : '-',
+                                  onTap: () => _showEditDialog(
+                                    title: 'Edit Plant Address',
+                                    currentValue: plantInfo?.address ?? '',
+                                    hint: 'Masukkan alamat plant',
+                                    icon: Icons.location_city,
+                                    maxLines: 2,
+                                    onSave: (value) =>
+                                        _settingsCubit.updatePlantAddress(value),
+                                  ),
+                                ),
+                                _buildDivider(),
+                                _buildSettingTile(
+                                  context: context,
+                                  icon: Icons.confirmation_number,
+                                  title: 'Plant Code',
+                                  subtitle: plantInfo?.code.isNotEmpty == true
+                                      ? plantInfo!.code
+                                      : '-',
+                                  onTap: () => _showEditDialog(
+                                    title: 'Edit Plant Code',
+                                    currentValue: plantInfo?.code ?? '',
+                                    hint: 'Masukkan kode plant',
+                                    icon: Icons.confirmation_number,
+                                    onSave: (value) =>
+                                        _settingsCubit.updatePlantCode(value),
+                                  ),
+                                ),
+                              ],
+                            ),
 
                             // Service Management Section
                           _buildSection(
@@ -529,6 +668,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   maxLength: 10,
                                   onSave: (value) =>
                                       _settingsCubit.updateInvoicePrefix(value),
+                                ),
+                              ),
+                              _buildDivider(),
+                              _buildSettingTile(
+                                context: context,
+                                icon: Icons.confirmation_number,
+                                title: 'Machine Number',
+                                subtitle:
+                                    storeInfo?.machineNumber ??
+                                    AppConstants.defaultMachineNumber,
+                                onTap: () => _showEditDialog(
+                                  title: 'Edit Machine Number',
+                                  currentValue:
+                                      storeInfo?.machineNumber ??
+                                      AppConstants.defaultMachineNumber,
+                                  hint: 'Masukkan nomor mesin (misal: 01)',
+                                  icon: Icons.confirmation_number,
+                                  maxLength: 5,
+                                  onSave: (value) =>
+                                      _settingsCubit.updateMachineNumber(value),
                                 ),
                               ),
                               _buildDivider(),

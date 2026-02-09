@@ -8,7 +8,7 @@ class AppConstants {
 
   // Database
   static const String databaseName = 'pos_offline.db';
-  static const int databaseVersion = 5;
+  static const int databaseVersion = 6;
 
   // Invoice
   static const String defaultInvoicePrefix = 'POS';
@@ -49,12 +49,20 @@ class AppConstants {
   static const String keyInvoicePrefix = 'invoice_prefix';
   static const String keyPrinterAddress = 'printer_address';
   static const String keyLastInvoiceDate = 'last_invoice_date';
+
   static const String keyLastInvoiceNumber = 'last_invoice_number';
+
+  // Plant Settings Keys
+  static const String keyPlantName = 'plant_name';
+  static const String keyPlantAddress = 'plant_address';
+  static const String keyPlantCode = 'plant_code';
+  static const String keyMachineNumber = 'machine_number';
 
   // Default Store Info
   static const String defaultStoreName = 'Toko Serba Ada';
   static const String defaultStoreAddress = 'Indonesia';
   static const String defaultStorePhone = '-';
+  static const String defaultMachineNumber = '01';
 
 
 }

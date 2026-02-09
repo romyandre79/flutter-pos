@@ -440,6 +440,26 @@ class DatabaseHelper {
         await db.execute('CREATE INDEX idx_po_items_product ON purchase_order_items(product_id)');
       }
     }
+
+    if (oldVersion < 6) {
+      // Add synchronization columns
+      
+      // Orders: is_synced, server_id
+      await db.execute('ALTER TABLE orders ADD COLUMN is_synced INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE orders ADD COLUMN server_id INTEGER');
+      await db.execute('CREATE INDEX idx_orders_synced ON orders(is_synced)');
+      
+      // Products: server_id
+      await db.execute('ALTER TABLE products ADD COLUMN server_id INTEGER');
+      
+      // Customers: server_id
+      await db.execute('ALTER TABLE customers ADD COLUMN server_id INTEGER');
+
+      // Categories (if we had them, but we don't seem to have a table yet, skippping)
+      
+      // Suppliers: server_id
+      await db.execute('ALTER TABLE suppliers ADD COLUMN server_id INTEGER');
+    }
   }
 
   // Utility methods
