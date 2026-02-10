@@ -21,7 +21,7 @@ class DashboardCubit extends Cubit<DashboardState> {
     try {
       // Load all dashboard data in parallel
       final results = await Future.wait([
-        _orderRepository.getTodayOrderCountByStatus(),
+        _orderRepository.getDashboardStatusCounts(),
         _paymentRepository.getTodayRevenue(),
         _paymentRepository.getThisMonthOrderCount(),
         _orderRepository.getRecentOrders(limit: 5),

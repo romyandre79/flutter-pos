@@ -265,33 +265,19 @@ class OrderCubit extends Cubit<OrderState> {
   
   /// Load order detail
   Future<void> loadOrderDetail(int orderId) async {
-    emit(const OrderLoading()); // Using loading state for detail view too? Usually separate DetailLoaded but logic reuse is fine if handled in UI
-    // Wait, OrderLoaded handles List<Order>. For detail screen we might need different state or just fetch it.
-    // The previous implementation pattern in other files suggests using OrderLoaded for list.
-    // OrderDetailScreen usually uses OrderCubit.loadOrderDetail? 
-    // Or maybe it uses a separate detail cubit? 
-    // Checking OrderDetailScreen usage context:
-    // It calls context.read<OrderCubit>().loadOrders() usually on pop.
-    // The detail screen itself might fetch data directly or use this cubit.
-    // Let's implement loadOrderDetail to emit OrderOperationSuccess or similar if it's just for refresh,
-    // OR create a specific state OrderDetailLoaded(Order order).
-    // Given the errors "Method not found: 'loadOrderDetail'", it was expected to be there.
-    
-    // I will use a simple implementation that just reloads the list which implicitly updates detail if they share state, 
-    // BUT detail screen usually needs specific single order.
-    // Let's checking OrderState definition would be wise but I can't do it now.
-    // Assuming standard pattern:
-    
-    // Actually, looking at the truncated file, addPayment called `await loadOrderDetail(orderId)`.
-    // So it must exist.
-    // I'll implement it to fetch and maybe emit a state if needed, or if the UI listens to it.
-    // Since I don't see OrderDetailState, I'll assume it might just be needed to refresh data or do nothing if the UI handles it separately.
-    // However, if I emit OrderLoaded with single item list, it might break the list view.
-    // Let's look at `OrderState` contents from `list_dir`... wait I didn't read it.
-    // I'll implement it to reload main orders list for now as a fallback, 
-    // effectively refreshing the data.
-    
-    await loadOrders(status: _currentFilter);
+    emit(const OrderLoading());
+
+    try {
+      final order = await _orderRepository.getOrderById(orderId);
+      
+      if (order != null) {
+        emit(OrderDetailLoaded(order));
+      } else {
+        emit(const OrderError('Order tidak ditemukan'));
+      }
+    } catch (e) {
+      emit(OrderError(e.toString().replaceAll('Exception: ', '')));
+    }
   }
 
   /// Delete order

@@ -239,21 +239,32 @@ class OrderRepository {
     return counts;
   }
 
-  /// Get today's order count by status
-  Future<Map<OrderStatus, int>> getTodayOrderCountByStatus() async {
+  /// Get dashboard status counts
+  /// Pending, Process, Ready: All time (Backlog)
+  /// Done: Today only (Performance)
+  Future<Map<OrderStatus, int>> getDashboardStatusCounts() async {
     final db = await _databaseHelper.database;
     final today = DateTime.now();
     final startOfDay = DateTime(today.year, today.month, today.day).toIso8601String();
     final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59).toIso8601String();
 
     final counts = <OrderStatus, int>{};
-    for (final status in OrderStatus.values) {
+    
+    // For active statuses, count all (backlog)
+    for (final status in [OrderStatus.pending, OrderStatus.process, OrderStatus.ready]) {
       final result = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM orders WHERE status = ? AND created_at >= ? AND created_at <= ?',
-        [status.value, startOfDay, endOfDay],
+        'SELECT COUNT(*) as count FROM orders WHERE status = ?',
+        [status.value],
       );
       counts[status] = result.first['count'] as int;
     }
+
+    // For done, count only today
+    final doneResult = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM orders WHERE status = ? AND updated_at >= ? AND updated_at <= ?',
+      [OrderStatus.done.value, startOfDay, endOfDay],
+    );
+    counts[OrderStatus.done] = doneResult.first['count'] as int;
 
     return counts;
   }
