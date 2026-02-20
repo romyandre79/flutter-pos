@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_pos_offline/core/constants/colors.dart';
-import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
-import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
-import 'package:flutter_pos_offline/data/models/customer.dart';
-import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/customer/customer_state.dart';
-import 'package:flutter_pos_offline/presentation/screens/customers/customer_form_screen.dart';
+import 'package:flutter_pos/core/constants/colors.dart';
+import 'package:flutter_pos/core/utils/currency_formatter.dart';
+import 'package:flutter_pos/core/utils/date_formatter.dart';
+import 'package:flutter_pos/data/models/customer.dart';
+import 'package:flutter_pos/logic/cubits/customer/customer_cubit.dart';
+import 'package:flutter_pos/logic/cubits/customer/customer_state.dart';
+import 'package:flutter_pos/presentation/screens/customers/customer_form_screen.dart';
 
 class CustomerDetailScreen extends StatelessWidget {
   final Customer customer;

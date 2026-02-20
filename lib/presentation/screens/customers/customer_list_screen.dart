@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
-import 'package:flutter_pos_offline/data/models/customer.dart';
-import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/customer/customer_state.dart';
-import 'package:flutter_pos_offline/presentation/screens/customers/customer_form_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/customers/customer_detail_screen.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/core/utils/currency_formatter.dart';
+import 'package:flutter_pos/data/models/customer.dart';
+import 'package:flutter_pos/logic/cubits/customer/customer_cubit.dart';
+import 'package:flutter_pos/logic/cubits/customer/customer_state.dart';
+import 'package:flutter_pos/presentation/screens/customers/customer_form_screen.dart';
+import 'dart:io';
+import 'package:excel/excel.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter_pos/core/services/export_service.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter_pos/presentation/screens/customers/customer_detail_screen.dart';
 
 class CustomerListScreen extends StatefulWidget {
   const CustomerListScreen({super.key});
@@ -134,6 +140,82 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     );
   }
 
+  Widget _buildFAB() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppThemeColors.primaryGradient,
+        borderRadius: AppRadius.fullRadius,
+        boxShadow: AppShadows.purple,
+      ),
+      child: FloatingActionButton.extended(
+        onPressed: () => _navigateToForm(),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text(
+          'Tambah',
+          style: AppTypography.labelMedium.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndImportFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        if (!mounted) return;
+        context.read<CustomerCubit>().importCustomers(file);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memilih file: $e'),
+          backgroundColor: AppThemeColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _downloadTemplate() async {
+    try {
+      final filePath = await ExportService().downloadCustomerTemplate();
+      if (filePath != null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Template disimpan di: $filePath'),
+            backgroundColor: AppThemeColors.success,
+            action: SnackBarAction(
+              label: 'Buka',
+              textColor: Colors.white,
+              onPressed: () {
+                 SharePlus.instance.share(ShareParams(files: [XFile(filePath)], text: 'Template Import Pelanggan'));
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal download template: $e'),
+          backgroundColor: AppThemeColors.error,
+        ),
+      );
+    }
+  }
+
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
@@ -147,7 +229,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             children: [
               Row(
                 children: [
-                  // Back button
+                   // Back button
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -191,6 +273,39 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                         size: 20,
                       ),
                     ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    onSelected: (value) {
+                      if (value == 'import') {
+                        _pickAndImportFile();
+                      } else if (value == 'template') {
+                        _downloadTemplate();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'import',
+                        child: Row(
+                          children: [
+                            Icon(Icons.upload_file, color: AppThemeColors.primary),
+                            SizedBox(width: 8),
+                            Text('Import Excel'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'template',
+                        child: Row(
+                          children: [
+                            Icon(Icons.download, color: AppThemeColors.primary),
+                            SizedBox(width: 8),
+                            Text('Download Template'),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -267,35 +382,6 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 color: AppThemeColors.textSecondary,
               ),
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            GestureDetector(
-              onTap: () => _navigateToForm(),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.md,
-                ),
-                decoration: BoxDecoration(
-                  gradient: AppThemeColors.primaryGradient,
-                  borderRadius: AppRadius.mdRadius,
-                  boxShadow: AppShadows.purple,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add, color: Colors.white, size: 20),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Tambah Pelanggan',
-                      style: AppTypography.labelMedium.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -461,27 +547,5 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
       ),
     );
   }
-
-  Widget _buildFAB() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppThemeColors.primaryGradient,
-        borderRadius: AppRadius.fullRadius,
-        boxShadow: AppShadows.purple,
-      ),
-      child: FloatingActionButton.extended(
-        onPressed: () => _navigateToForm(),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          'Tambah',
-          style: AppTypography.labelMedium.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
 }
+

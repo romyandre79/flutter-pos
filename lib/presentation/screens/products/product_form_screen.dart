@@ -1,15 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
+// import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/data/models/product.dart';
-import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_pos_offline/data/models/user.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/data/models/product.dart';
+import 'package:flutter_pos/logic/cubits/product/product_cubit.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos/data/models/user.dart';
+import 'package:flutter_pos/logic/cubits/unit/unit_cubit.dart';
+import 'package:flutter_pos/data/models/unit.dart';
+import 'package:flutter_pos/presentation/widgets/simple_barcode_scanner.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? product;
@@ -28,9 +33,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   late TextEditingController _stockController;
   late TextEditingController _durationController;
   late TextEditingController _descriptionController;
+  late TextEditingController _barcodeController;
   
   File? _imageFile;
-  final ImagePicker _picker = ImagePicker();
+  // final ImagePicker _picker = ImagePicker();
 
   ProductType _selectedType = ProductType.service;
   String _selectedUnit = 'pcs';
@@ -38,6 +44,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   @override
   void initState() {
     super.initState();
+    // Load units
+    context.read<UnitCubit>().loadUnits();
+
     final product = widget.product;
     _nameController = TextEditingController(text: product?.name);
     _priceController = TextEditingController(text: product?.price.toString());
@@ -45,6 +54,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _stockController = TextEditingController(text: product?.stock?.toString() ?? '0');
     _durationController = TextEditingController(text: product?.durationDays?.toString() ?? '3');
     _descriptionController = TextEditingController(text: product?.description);
+    _barcodeController = TextEditingController(text: product?.barcode);
 
     if (product != null) {
       _selectedType = product.type;
@@ -63,24 +73,74 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _stockController.dispose();
     _durationController.dispose();
     _descriptionController.dispose();
+    _barcodeController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
-    final XFile? photo = await _picker.pickImage(source: ImageSource.gallery);
-    if (photo != null) {
-      setState(() {
-        _imageFile = File(photo.path);
-      });
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'heic'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final processedFile = await _processImage(file);
+        
+        setState(() {
+          _imageFile = processedFile;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memilih gambar: $e'), backgroundColor: AppThemeColors.error),
+        );
+      }
     }
+  }
+
+  Future<File> _processImage(File file) async {
+    final ext = path.extension(file.path).toLowerCase();
+    
+    // Check if HEIC/HEIF
+    if (ext == '.heic' || ext == '.heif') {
+      try {
+        // Prepare target path
+        final tempDir = await getTemporaryDirectory();
+        final targetPath = '${tempDir.path}/${path.basenameWithoutExtension(file.path)}.jpg';
+        
+        // Convert using flutter_image_compress (Mobile/MacOS)
+        // On Windows this might throw or fail if not supported, so we wrap in try-catch
+        if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+            final result = await FlutterImageCompress.compressAndGetFile(
+              file.absolute.path,
+              targetPath,
+              quality: 85,
+              format: CompressFormat.jpeg,
+            );
+            
+            if (result != null) {
+              return File(result.path);
+            }
+        }
+        
+        // Fallback for Windows or if conversion failed (return original and hope OS supports it)
+        return file;
+        
+      } catch (e) {
+        debugPrint('Error converting HEIC: $e');
+        return file; // Return original if conversion fails
+      }
+    }
+    
+    return file; // Not HEIC, return as is
   }
 
   Future<String?> _saveImage() async {
     if (_imageFile == null) return null;
-    
-    // If it's already an existing saved image (checked by path containing app doc dir), just return path
-    // tailored for simple check: 
-    // real implementation: copy to app directory
     
     try {
       final appDir = await getApplicationDocumentsDirectory();
@@ -99,6 +159,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       final price = int.parse(_priceController.text);
       final cost = int.parse(_costController.text);
       final description = _descriptionController.text;
+      final barcode = _barcodeController.text.isEmpty ? null : _barcodeController.text;
       
       final imagePath = await _saveImage();
       if (!mounted) return;
@@ -111,6 +172,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         cost: cost,
         unit: _selectedUnit,
         type: _selectedType,
+        barcode: barcode,
         // Optional fields based on type
         stock: _selectedType == ProductType.goods 
             ? int.tryParse(_stockController.text) ?? 0 
@@ -230,6 +292,39 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
+
+
+              // Barcode
+              TextFormField(
+                controller: _barcodeController,
+                decoration: InputDecoration(
+                  labelText: 'Barcode / SKU',
+                  hintText: 'Scan or type barcode',
+                  prefixIcon: const Icon(Icons.qr_code, color: AppThemeColors.primary),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SimpleBarcodeScanner(),
+                        ),
+                      );
+                      
+                      if (result != null && result is String) {
+                        setState(() {
+                          _barcodeController.text = result;
+                        });
+                      }
+                    },
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: AppRadius.mdRadius,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
               // Name
               TextFormField(
                 controller: _nameController,
@@ -257,27 +352,45 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Unit
-              TextFormField(
-                initialValue: _selectedUnit,
-                decoration: InputDecoration(
-                  labelText: 'Satuan',
-                  hintText: 'kg, pcs, pack',
-                  prefixIcon: const Icon(Icons.straighten, color: AppThemeColors.primary),
-                  border: OutlineInputBorder(
-                    borderRadius: AppRadius.mdRadius,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.mdRadius,
-                    borderSide: BorderSide(color: AppThemeColors.border),
-                  ),
-                ),
-                onChanged: (val) => _selectedUnit = val,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Satuan tidak boleh kosong';
+              // Unit Dropdown via Cubit
+              BlocBuilder<UnitCubit, UnitState>(
+                builder: (context, state) {
+                  List<Unit> units = [];
+                  if (state is UnitLoaded) {
+                    units = state.units;
                   }
-                  return null;
+                  
+                  // Ensure current selected unit is in the list, if not, maybe add it nicely or handle custom units?
+                  // For now, if we have units, use dropdown. If empty, maybe fallback to text?
+                  // Or just add "pcs", "kg" as default if list empty?
+                  
+                  if (units.isEmpty) {
+                     // Fallback to text field
+                     return TextFormField(
+                        initialValue: _selectedUnit,
+                        decoration: InputDecoration(
+                          labelText: 'Satuan',
+                          hintText: 'kg, pcs',
+                          prefixIcon: const Icon(Icons.straighten, color: AppThemeColors.primary),
+                          border: OutlineInputBorder(borderRadius: AppRadius.mdRadius),
+                        ),
+                        onChanged: (val) => _selectedUnit = val,
+                     );
+                  }
+
+                  return DropdownButtonFormField<String>(
+                    value: units.any((u) => u.name == _selectedUnit) ? _selectedUnit : (units.isNotEmpty ? units.first.name : null),
+                    decoration: InputDecoration(
+                      labelText: 'Satuan',
+                      prefixIcon: const Icon(Icons.straighten, color: AppThemeColors.primary),
+                      border: OutlineInputBorder(borderRadius: AppRadius.mdRadius),
+                    ),
+                    items: units.map((u) => DropdownMenuItem(value: u.name, child: Text(u.name))).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedUnit = val);
+                    },
+                    validator: (val) => val == null ? 'Pilih satuan' : null,
+                  );
                 },
               ),
               const SizedBox(height: AppSpacing.lg),

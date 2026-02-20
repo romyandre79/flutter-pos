@@ -1,15 +1,15 @@
 Analyzing flutter-pos-offline...                                
 
 warning - Unused import: 'package:sqflite/sqflite.dart' - lib\data\repositories\product_repository.dart:1:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:9:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/logic/cubits/service/service_cubit.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:13:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/presentation/screens/orders/order_form_screen.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:15:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/presentation/screens/services/service_list_screen.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:18:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:24:8 - unused_import
+warning - Unused import: 'package:flutter_pos/logic/cubits/customer/customer_cubit.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:9:8 - unused_import
+warning - Unused import: 'package:flutter_pos/logic/cubits/service/service_cubit.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:13:8 - unused_import
+warning - Unused import: 'package:flutter_pos/presentation/screens/orders/order_form_screen.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:15:8 - unused_import
+warning - Unused import: 'package:flutter_pos/presentation/screens/services/service_list_screen.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:18:8 - unused_import
+warning - Unused import: 'package:flutter_pos/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\dashboard\dashboard_screen.dart:24:8 - unused_import
   error - The method 'PosCubit' isn't defined for the type '_DashboardScreenState' - lib\presentation\screens\dashboard\dashboard_screen.dart:375:46 - undefined_method
-warning - Unused import: 'package:flutter_pos_offline/presentation/screens/orders/order_list_screen.dart' - lib\presentation\screens\main_screen.dart:11:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\main_screen.dart:15:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/data/repositories/service_repository.dart' - lib\presentation\screens\main_screen.dart:16:8 - unused_import
+warning - Unused import: 'package:flutter_pos/presentation/screens/orders/order_list_screen.dart' - lib\presentation\screens\main_screen.dart:11:8 - unused_import
+warning - Unused import: 'package:flutter_pos/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\main_screen.dart:15:8 - unused_import
+warning - Unused import: 'package:flutter_pos/data/repositories/service_repository.dart' - lib\presentation\screens\main_screen.dart:16:8 - unused_import
   error - The method 'PosCubit' isn't defined for the type '_MainScreenState' - lib\presentation\screens\main_screen.dart:127:36 - undefined_method
 warning - The value of the local variable 'screenHeight' isn't used - lib\presentation\screens\onboarding\onboarding_screen.dart:112:11 - unused_local_variable
 warning - The declaration '_showStatusUpdateDialog' isn't referenced - lib\presentation\screens\orders\order_detail_screen.dart:73:8 - unused_element
@@ -21,15 +21,15 @@ warning - The declaration '_showStatusUpdateDialog' isn't referenced - lib\prese
 warning - A value for optional parameter 'quantity' isn't ever given - lib\presentation\screens\orders\order_form_screen.dart:1194:10 - unused_element_parameter
    info - Unnecessary use of multiple underscores - lib\presentation\screens\orders\order_form_screen.dart:1356:41 - unnecessary_underscores
 warning - Unused import: 'package:flutter_bloc/flutter_bloc.dart' - lib\presentation\screens\pos\pos_screen.dart:2:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\pos\pos_screen.dart:4:8 - unused_import
-warning - Unused import: 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\pos\widgets\cart_panel.dart:5:8 - unused_import
+warning - Unused import: 'package:flutter_pos/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\pos\pos_screen.dart:4:8 - unused_import
+warning - Unused import: 'package:flutter_pos/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\pos\widgets\cart_panel.dart:5:8 - unused_import
   error - The name 'PosCubit' isn't a type, so it can't be used as a type argument - lib\presentation\screens\pos\widgets\cart_panel.dart:53:45 - non_type_as_type_argument
   error - The name 'PosCubit' isn't a type, so it can't be used as a type argument - lib\presentation\screens\pos\widgets\cart_panel.dart:69:32 - non_type_as_type_argument
    info - Unnecessary use of multiple underscores - lib\presentation\screens\pos\widgets\cart_panel.dart:97:43 - unnecessary_underscores
   error - The name 'PosCubit' isn't a type, so it can't be used as a type argument - lib\presentation\screens\pos\widgets\cart_panel.dart:109:61 - non_type_as_type_argument
   error - The name 'PosCubit' isn't a type, so it can't be used as a type argument - lib\presentation\screens\pos\widgets\cart_panel.dart:117:61 - non_type_as_type_argument
   error - The name 'PosCubit' isn't a type, so it can't be used as a type argument - lib\presentation\screens\pos\widgets\cart_panel.dart:153:23 - non_type_as_type_argument
-warning - Unused import: 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\pos\widgets\service_catalog.dart:4:8 - unused_import
+warning - Unused import: 'package:flutter_pos/logic/cubits/pos/pos_cubit.dart' - lib\presentation\screens\pos\widgets\service_catalog.dart:4:8 - unused_import
   error - The name 'PosCubit' isn't a type, so it can't be used as a type argument - lib\presentation\screens\pos\widgets\service_catalog.dart:30:32 - non_type_as_type_argument
   error - The name 'PosCubit' isn't a type, so it can't be used as a type argument - lib\presentation\screens\pos\widgets\service_catalog.dart:53:30 - non_type_as_type_argument
   error - The name 'PosCubit' isn't a type, so it can't be used as a type argument - lib\presentation\screens\pos\widgets\service_catalog.dart:78:38 - non_type_as_type_argument

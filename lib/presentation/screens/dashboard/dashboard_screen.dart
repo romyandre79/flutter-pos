@@ -1,34 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
-import 'package:flutter_pos_offline/data/models/order.dart';
-import 'package:flutter_pos_offline/data/models/user.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_pos_offline/logic/cubits/dashboard/dashboard_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/dashboard/dashboard_state.dart';
-import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/printer/printer_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/orders/order_detail_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/orders/order_list_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/settings/printer_settings_screen.dart';
-import 'package:flutter_pos_offline/presentation/widgets/order_card.dart';
-import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
-import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/purchasing/purchase_order_list_screen.dart';
-import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
-import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
-import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
-import 'package:flutter_pos_offline/presentation/screens/pos/pos_screen.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/core/utils/currency_formatter.dart';
+import 'package:flutter_pos/data/models/order.dart';
+import 'package:flutter_pos/data/models/user.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos/logic/cubits/dashboard/dashboard_cubit.dart';
+import 'package:flutter_pos/logic/cubits/dashboard/dashboard_state.dart';
+import 'package:flutter_pos/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos/logic/cubits/printer/printer_cubit.dart';
+import 'package:flutter_pos/presentation/screens/orders/order_detail_screen.dart';
+import 'package:flutter_pos/presentation/screens/orders/order_list_screen.dart';
+import 'package:flutter_pos/presentation/screens/settings/printer_settings_screen.dart';
+import 'package:flutter_pos/presentation/widgets/order_card.dart';
+import 'package:flutter_pos/data/repositories/product_repository.dart';
+import 'package:flutter_pos/logic/cubits/pos/pos_cubit.dart';
+import 'package:flutter_pos/logic/cubits/purchase_order/purchase_order_cubit.dart';
+import 'package:flutter_pos/presentation/screens/purchasing/purchase_order_list_screen.dart';
+import 'package:flutter_pos/data/repositories/purchase_order_repository.dart';
+import 'package:flutter_pos/logic/cubits/supplier/supplier_cubit.dart';
+import 'package:flutter_pos/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos/presentation/screens/pos/pos_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final Function(int)? onSwitchTab;
+
+  const DashboardScreen({super.key, this.onSwitchTab});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
+
+
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late DashboardCubit _dashboardCubit;
@@ -367,17 +371,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 label: 'Kasir',
                 color: AppThemeColors.primary,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider(
-                        create: (context) => PosCubit(
-                          context.read<ProductRepository>(),
-                        )..loadProducts(),
-                        child: PosScreen(),
-                      ),
-                    ),
-                  ).then((_) => _dashboardCubit.loadDashboard());
+                  if (widget.onSwitchTab != null) {
+                    widget.onSwitchTab!(1);
+                  } else {
+                    final isLargeScreen = MediaQuery.of(context).size.width > 800;
+                    if (isLargeScreen) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider(
+                            create: (context) => PosCubit(
+                              context.read<ProductRepository>(),
+                            )..loadProducts(),
+                            child: PosScreen(),
+                          ),
+                        ),
+                      ).then((_) => _dashboardCubit.loadDashboard());
+                    } else {
+                       Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: context.read<OrderCubit>(),
+                            child: const OrderListScreen(),
+                          ),
+                        ),
+                      ).then((_) => _dashboardCubit.loadDashboard());
+                    }
+                  }
                 },
               ),
             ),
@@ -499,6 +520,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          'Ringkasan Hari Ini',
+          style: AppTypography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [

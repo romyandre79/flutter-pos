@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_pos_offline/core/constants/app_constants.dart';
-import 'package:flutter_pos_offline/core/utils/password_helper.dart';
+import 'package:flutter_pos/core/constants/app_constants.dart';
+import 'package:flutter_pos/core/utils/password_helper.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -70,6 +70,7 @@ class DatabaseHelper {
         total_orders INTEGER DEFAULT 0,
         total_spent INTEGER DEFAULT 0,
         last_order_date TEXT,
+        server_id INTEGER,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
@@ -99,9 +100,12 @@ class DatabaseHelper {
         stock INTEGER,
         unit TEXT NOT NULL,
         type TEXT NOT NULL, -- service, goods
+        min_stock INTEGER DEFAULT 0,
+        barcode TEXT,
         duration_days INTEGER,
         image_url TEXT,
         is_active INTEGER DEFAULT 1,
+        server_id INTEGER,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
@@ -124,6 +128,8 @@ class DatabaseHelper {
         paid INTEGER DEFAULT 0,
         notes TEXT,
         created_by INTEGER,
+        is_synced INTEGER DEFAULT 0,
+        server_id INTEGER,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
@@ -183,6 +189,7 @@ class DatabaseHelper {
         address TEXT,
         phone TEXT,
         email TEXT,
+        server_id INTEGER,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
@@ -198,6 +205,8 @@ class DatabaseHelper {
         status TEXT NOT NULL, -- pending, received, cancelled
         total_amount INTEGER DEFAULT 0,
         notes TEXT,
+        is_synced INTEGER DEFAULT 0,
+        server_id INTEGER,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
@@ -214,9 +223,21 @@ class DatabaseHelper {
         cost INTEGER NOT NULL,
         subtotal INTEGER NOT NULL,
         product_id INTEGER,
+        unit TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+      )
+    ''');
+
+    // Create Units table
+    await db.execute('''
+      CREATE TABLE units (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        server_id INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     ''');
 
@@ -252,6 +273,7 @@ class DatabaseHelper {
     // Products indexes
     await db.execute('CREATE INDEX idx_products_type ON products(type)');
     await db.execute('CREATE INDEX idx_products_name ON products(name)');
+    await db.execute('CREATE INDEX idx_products_barcode ON products(barcode)');
   }
 
   Future<void> _seedData(Database db) async {
@@ -301,6 +323,14 @@ class DatabaseHelper {
         'key': entry.key,
         'value': entry.value,
       });
+    }
+    
+    // Seed default units
+    final units = ['pcs', 'kg', 'liter', 'box', 'pack'];
+    for (final unit in units) {
+       await db.insert('units', {
+         'name': unit,
+       });
     }
   }
 
@@ -445,21 +475,100 @@ class DatabaseHelper {
       // Add synchronization columns
       
       // Orders: is_synced, server_id
-      await db.execute('ALTER TABLE orders ADD COLUMN is_synced INTEGER DEFAULT 0');
-      await db.execute('ALTER TABLE orders ADD COLUMN server_id INTEGER');
-      await db.execute('CREATE INDEX idx_orders_synced ON orders(is_synced)');
+      final orderCols = await db.rawQuery('PRAGMA table_info(orders)');
+      if (!orderCols.any((col) => col['name'] == 'is_synced')) {
+        await db.execute('ALTER TABLE orders ADD COLUMN is_synced INTEGER DEFAULT 0');
+        await db.execute('CREATE INDEX idx_orders_synced ON orders(is_synced)');
+      }
+      if (!orderCols.any((col) => col['name'] == 'server_id')) {
+        await db.execute('ALTER TABLE orders ADD COLUMN server_id INTEGER');
+      }
       
       // Products: server_id
-      await db.execute('ALTER TABLE products ADD COLUMN server_id INTEGER');
+      final productCols = await db.rawQuery('PRAGMA table_info(products)');
+      if (!productCols.any((col) => col['name'] == 'server_id')) {
+        await db.execute('ALTER TABLE products ADD COLUMN server_id INTEGER');
+      }
       
       // Customers: server_id
-      await db.execute('ALTER TABLE customers ADD COLUMN server_id INTEGER');
+      final customerCols = await db.rawQuery('PRAGMA table_info(customers)');
+      if (!customerCols.any((col) => col['name'] == 'server_id')) {
+        await db.execute('ALTER TABLE customers ADD COLUMN server_id INTEGER');
+      }
 
       // Categories (if we had them, but we don't seem to have a table yet, skippping)
       
       // Suppliers: server_id
-      await db.execute('ALTER TABLE suppliers ADD COLUMN server_id INTEGER');
+      final supplierCols = await db.rawQuery('PRAGMA table_info(suppliers)');
+      if (!supplierCols.any((col) => col['name'] == 'server_id')) {
+        await db.execute('ALTER TABLE suppliers ADD COLUMN server_id INTEGER');
+      }
     }
+
+    if (oldVersion < 7) {
+      // Version 7: Units, Barcodes, Purchasing Sync
+      
+      // 1. Create Units table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS units (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          server_id INTEGER,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+      
+      // Seed default units if empty
+      final unitsCount = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM units'));
+      if (unitsCount == 0) {
+        final units = ['pcs', 'kg', 'liter', 'box', 'pack'];
+        for (final unit in units) {
+           await db.insert('units', {
+             'name': unit,
+           });
+        }
+      }
+
+      // 2. Add barcode to products
+      final productCols = await db.rawQuery('PRAGMA table_info(products)');
+      if (!productCols.any((col) => col['name'] == 'barcode')) {
+        await db.execute('ALTER TABLE products ADD COLUMN barcode TEXT');
+        await db.execute('CREATE INDEX idx_products_barcode ON products(barcode)');
+      }
+
+      // 3. Add unit to purchase_order_items
+      final poItemCols = await db.rawQuery('PRAGMA table_info(purchase_order_items)');
+      if (!poItemCols.any((col) => col['name'] == 'unit')) {
+        await db.execute('ALTER TABLE purchase_order_items ADD COLUMN unit TEXT');
+      }
+      
+      // 4. Add sync columns to purchase_orders (server_id, is_synced)
+      final poCols = await db.rawQuery('PRAGMA table_info(purchase_orders)');
+      if (!poCols.any((col) => col['name'] == 'server_id')) {
+        await db.execute('ALTER TABLE purchase_orders ADD COLUMN server_id INTEGER');
+      }
+      if (!poCols.any((col) => col['name'] == 'is_synced')) {
+        await db.execute('ALTER TABLE purchase_orders ADD COLUMN is_synced INTEGER DEFAULT 0');
+      }
+      
+      // 5. Ensure server_id on suppliers (already in v6 but check again to be safe)
+      final supplierCols = await db.rawQuery('PRAGMA table_info(suppliers)');
+      if (!supplierCols.any((col) => col['name'] == 'server_id')) {
+        await db.execute('ALTER TABLE suppliers ADD COLUMN server_id INTEGER');
+      }
+    }
+  }
+  
+  Future<String> getDbPath() async {
+    final String dbPath;
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      final docsDir = await getApplicationDocumentsDirectory();
+      dbPath = docsDir.path;
+    } else {
+      dbPath = await getDatabasesPath();
+    }
+    return join(dbPath, AppConstants.databaseName);
   }
 
   // Utility methods
@@ -481,3 +590,4 @@ class DatabaseHelper {
     await database; // This will recreate the database
   }
 }
+

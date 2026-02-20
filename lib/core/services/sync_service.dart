@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:flutter_pos_offline/core/api/api_service.dart';
-import 'package:flutter_pos_offline/data/database/database_helper.dart';
-import 'package:flutter_pos_offline/data/models/customer.dart';
-import 'package:flutter_pos_offline/data/models/order.dart';
-import 'package:flutter_pos_offline/data/models/order_item.dart';
-import 'package:flutter_pos_offline/data/models/product.dart';
-import 'package:flutter_pos_offline/data/models/supplier.dart';
+import 'package:flutter_pos/core/api/api_service.dart';
+import 'package:flutter_pos/data/database/database_helper.dart';
+import 'package:flutter_pos/data/models/customer.dart';
+import 'package:flutter_pos/data/models/order.dart';
+import 'package:flutter_pos/data/models/order_item.dart';
+import 'package:flutter_pos/data/models/product.dart';
+import 'package:flutter_pos/data/models/supplier.dart';
 
 
-import 'package:flutter_pos_offline/core/services/session_service.dart';
+import 'package:flutter_pos/core/services/session_service.dart';
 
 class SyncService {
   final ApiService _apiService;
@@ -79,7 +79,6 @@ class SyncService {
         final response = await _apiService.executeFlow('pos_sync_orders', 'pos', payload);
         
         if (response.data['code'] == 200) {
-          // data.data might contain the record or list
           final serverId = response.data['data']['data']['id']; 
           
           // Update local order as synced
@@ -95,7 +94,6 @@ class SyncService {
           successCount++;
         }
       } catch (e) {
-        // Skip on error, try next
         debugPrint('Error uploading order ${map['invoice_no']}: $e');
       }
     }
@@ -103,12 +101,120 @@ class SyncService {
     return successCount;
   }
 
-  // Download master data (Products, Customers, Suppliers)
+  // Upload unsynced Purchase Orders
+  Future<int> uploadPurchaseOrders() async {
+    // Only upload if authenticated? Or let it fail inside?
+    // We assume _ensureAuthenticated called before or handles it.
+    await _ensureAuthenticated();
+
+    final db = await _dbHelper.database;
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'purchase_orders',
+      where: 'is_synced = ?',
+      whereArgs: [0],
+    );
+
+    if (maps.isEmpty) return 0;
+
+    int successCount = 0;
+
+    for (final map in maps) {
+      try {
+        // We probably need a PurchaseOrder model that supports fromMap/toMap properly 
+        // including the new server_id and is_synced fields if not present
+        // But here we can just use raw map manipulation if the model isn't updated yet, 
+        // however we should update the model. Assuming model will be updated.
+        // For now, let's construct payload manually to be safe or use model if available.
+        
+        // Get PO Items
+        final List<Map<String, dynamic>> itemMaps = await db.query(
+          'purchase_order_items',
+          where: 'purchase_order_id = ?',
+          whereArgs: [map['id']],
+        );
+        
+        final payload = Map<String, dynamic>.from(map);
+        payload['items'] = itemMaps;
+        
+        // Remove local-only fields if necessary, or handled by server ignoring them
+        payload.remove('id'); 
+        payload.remove('is_synced');
+        payload.remove('server_id'); // Should be null anyway if unsynced
+
+        // Send to server
+        final response = await _apiService.executeFlow('pos_sync_purchase_orders', 'pos', payload);
+
+        if (response.data['code'] == 200) {
+           final serverId = response.data['data']['data']['id'];
+           
+           await db.update(
+             'purchase_orders',
+             {
+               'is_synced': 1,
+               'server_id': serverId,
+             },
+             where: 'id = ?',
+             whereArgs: [map['id']],
+           );
+           successCount++;
+        }
+
+      } catch (e) {
+        debugPrint('Error uploading PO ${map['id']}: $e');
+      }
+    }
+    return successCount;
+  }
+
+  // Download master data (Products, Customers, Suppliers, Units)
   Future<void> downloadMasterData() async {
     await _ensureAuthenticated();
+    await _downloadUnits();
     await _downloadProducts();
     await _downloadCustomers();
     await _downloadSuppliers();
+  }
+  
+  Future<void> _downloadUnits() async {
+    try {
+      final response = await _apiService.executeFlow('pos_get_units', 'pos', {});
+      if (response.data['code'] == 200) {
+        final List<dynamic> data = response.data['data']['data'];
+        final db = await _dbHelper.database;
+        
+        await db.transaction((txn) async {
+          for (final item in data) {
+            final List<Map<String, dynamic>> existing = await txn.query(
+              'units',
+              where: 'server_id = ?',
+              whereArgs: [item['id']],
+            );
+            
+            final unitMap = {
+              'name': item['name'],
+              'server_id': item['id'],
+              // 'updated_at': DateTime.now().toIso8601String(), // Optional
+            };
+
+            if (existing.isNotEmpty) {
+              await txn.update(
+                'units',
+                unitMap,
+                where: 'server_id = ?',
+                whereArgs: [item['id']],
+              );
+            } else {
+              await txn.insert('units', unitMap);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error downloading units: $e');
+      // Don't rethrow, just log, so other syncs continue?
+      // rethrow; 
+    }
   }
 
   Future<void> _downloadProducts() async {
@@ -144,6 +250,7 @@ class SyncService {
               stock: stock,
               durationDays: durationDays,
               imageUrl: item['image_url'],
+              barcode: item['barcode'], // Added barcode
               serverId: item['id'],
             );
 

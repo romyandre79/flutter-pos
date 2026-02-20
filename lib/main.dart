@@ -4,29 +4,31 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
-import 'package:flutter_pos_offline/data/database/database_helper.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_pos_offline/presentation/screens/auth/login_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/main_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/onboarding/onboarding_screen.dart';
-import 'package:flutter_pos_offline/data/repositories/auth_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/order_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/report_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/service_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/user_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/payment_repository.dart'; // Add import
-import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_pos_offline/core/services/notification_service.dart';
-import 'package:flutter_pos_offline/core/api/api_service.dart';
-import 'package:flutter_pos_offline/core/services/sync_service.dart';
-import 'package:flutter_pos_offline/logic/sync/sync_cubit.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/core/utils/date_formatter.dart';
+import 'package:flutter_pos/data/database/database_helper.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos/presentation/screens/auth/login_screen.dart';
+import 'package:flutter_pos/presentation/screens/main_screen.dart';
+import 'package:flutter_pos/presentation/screens/onboarding/onboarding_screen.dart';
+import 'package:flutter_pos/data/repositories/auth_repository.dart';
+import 'package:flutter_pos/data/repositories/customer_repository.dart';
+import 'package:flutter_pos/data/repositories/order_repository.dart';
+import 'package:flutter_pos/data/repositories/report_repository.dart';
+import 'package:flutter_pos/data/repositories/service_repository.dart';
+import 'package:flutter_pos/data/repositories/user_repository.dart';
+import 'package:flutter_pos/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos/data/repositories/purchase_order_repository.dart';
+import 'package:flutter_pos/data/repositories/product_repository.dart';
+import 'package:flutter_pos/data/repositories/unit_repository.dart';
+import 'package:flutter_pos/core/api/api_service.dart';
+import 'package:flutter_pos/core/services/notification_service.dart';
+import 'package:flutter_pos/core/services/sync_service.dart';
+import 'package:flutter_pos/data/repositories/payment_repository.dart';
+import 'package:flutter_pos/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos/logic/sync/sync_cubit.dart';
+import 'package:flutter_pos/logic/cubits/unit/unit_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,14 +48,11 @@ void main() async {
   );
 
   // Initialize all at once
-  final results = await Future.wait([
-    SharedPreferences.getInstance(),
-    DateFormatter.initialize(),
-    DatabaseHelper.instance.database,
-    NotificationService().init(),
-  ]);
+  final prefs = await SharedPreferences.getInstance();
+  await DateFormatter.initialize();
+  await DatabaseHelper.instance.database;
+  await NotificationService().init();
 
-  final prefs = results[0] as SharedPreferences;
   final showOnboarding = !(prefs.getBool('onboarding_complete') ?? false);
 
   runApp(MyApp(showOnboarding: showOnboarding));
@@ -77,7 +76,8 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (_) => SupplierRepository()),
         RepositoryProvider(create: (_) => PurchaseOrderRepository()),
         RepositoryProvider(create: (_) => ProductRepository()),         
-        RepositoryProvider(create: (_) => PaymentRepository()), // Add PaymentRepository
+        RepositoryProvider(create: (_) => PaymentRepository()), 
+        RepositoryProvider(create: (_) => UnitRepository()), // Add UnitRepository
         RepositoryProvider(create: (_) => ApiService()),
         RepositoryProvider(
           create: (context) => SyncService(
@@ -97,8 +97,8 @@ class MyApp extends StatelessWidget {
             create: (context) => OrderCubit(
               orderRepository: context.read<OrderRepository>(),
               productRepository: context.read<ProductRepository>(),
-              customerRepository: context.read<CustomerRepository>(), // Inject CustomerRepository
-              paymentRepository: context.read<PaymentRepository>(), // Inject PaymentRepository
+              customerRepository: context.read<CustomerRepository>(),
+              paymentRepository: context.read<PaymentRepository>(),
             )..loadOrders(),
           ),
           BlocProvider(
@@ -106,9 +106,14 @@ class MyApp extends StatelessWidget {
               context.read<SyncService>(),
             ),
           ),
+          BlocProvider(
+            create: (context) => UnitCubit(
+              context.read<UnitRepository>(),
+            ),
+          ),
         ],
         child: MaterialApp(
-          title: 'POS Offline',
+          title: 'POS',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           home: AuthWrapper(showOnboarding: showOnboarding),

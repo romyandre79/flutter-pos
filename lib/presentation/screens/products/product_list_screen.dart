@@ -1,15 +1,19 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
-import 'package:flutter_pos_offline/data/models/product.dart';
-import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/product/product_state.dart';
-import 'package:flutter_pos_offline/presentation/screens/products/product_form_screen.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_pos_offline/data/models/user.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/core/utils/currency_formatter.dart';
+import 'package:flutter_pos/data/models/product.dart';
+import 'package:flutter_pos/data/repositories/product_repository.dart';
+import 'package:flutter_pos/logic/cubits/product/product_cubit.dart';
+import 'package:flutter_pos/logic/cubits/product/product_state.dart';
+import 'package:flutter_pos/presentation/screens/products/product_form_screen.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos/data/models/user.dart';
+import 'package:flutter_pos/core/services/import_service.dart';
+import 'package:flutter_pos/core/services/export_service.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -20,6 +24,8 @@ class ProductListScreen extends StatefulWidget {
 
 class _ProductListScreenState extends State<ProductListScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ImportService _importService = ImportService();
+  final ExportService _exportService = ExportService();
 
   @override
   void initState() {
@@ -32,6 +38,81 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+  
+  Future<void> _downloadTemplate() async {
+    try {
+       final path = await _exportService.downloadProductTemplate();
+       if (path != null) {
+         if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Template disimpan di: $path'), backgroundColor: Colors.green),
+           );
+         }
+       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal download template: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _importProducts() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final products = await _importService.parseProductsFromExcel(file);
+        
+        if (!mounted) return;
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Konfirmasi Import'),
+            content: Text('Akan mengimport ${products.length} produk/jasa. Lanjutkan?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  // Add all products
+                  final repo = context.read<ProductRepository>();
+                  int count = 0;
+                  for (final product in products) {
+                    await repo.addProduct(product);
+                    count++;
+                  }
+                  
+                  if (mounted) {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       SnackBar(content: Text('Berhasil mengimport $count item'), backgroundColor: Colors.green),
+                     );
+                     context.read<ProductCubit>().loadProducts();
+                  }
+                },
+                child: const Text('Import'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal import: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void _showDeleteDialog(Product product) {
@@ -86,8 +167,14 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<ProductCubit>(),
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: context.read<ProductCubit>()),
+            // Ensure UnitCubit is available. It should be if Main provides it, 
+            // but if we need a specific scoped instance we'd do it here.
+            // Since Main provides it globally, we don't strictly need to re-provide it unless we scoped it.
+            // But we do need to make sure the context passed to ProductFormScreen can access it.
+          ],
           child: ProductFormScreen(product: product),
         ),
       ),
@@ -227,6 +314,42 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
                   ),
                 ),
               ),
+              // Menu Actions
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'template':
+                      _downloadTemplate();
+                      break;
+                    case 'import':
+                      _importProducts();
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'template',
+                    child: Row(
+                      children: [
+                         Icon(Icons.download, color: Colors.blue),
+                         SizedBox(width: 8),
+                         Text('Download Template Excel'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'import',
+                    child: Row(
+                      children: [
+                         Icon(Icons.upload_file, color: Colors.green),
+                         SizedBox(width: 8),
+                         Text('Import dari Excel'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -356,6 +479,12 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
                           ),
                         ],
                       ),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (product.barcode != null && product.barcode!.isNotEmpty)
+                        Text(
+                          'Barcode: ${product.barcode}',
+                          style: AppTypography.labelSmall.copyWith(color: Colors.grey),
+                        ),
                       const SizedBox(height: AppSpacing.xs),
                       if (product.isService)
                         Row(

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/data/models/order.dart';
-import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/order/order_state.dart';
-import 'package:flutter_pos_offline/logic/cubits/service/service_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/orders/order_form_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/orders/order_detail_screen.dart';
-import 'package:flutter_pos_offline/presentation/widgets/order_card.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/data/models/order.dart';
+import 'package:flutter_pos/logic/cubits/customer/customer_cubit.dart';
+import 'package:flutter_pos/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos/logic/cubits/order/order_state.dart';
+import 'package:flutter_pos/logic/cubits/service/service_cubit.dart';
+import 'package:flutter_pos/presentation/screens/orders/order_form_screen.dart';
+import 'package:flutter_pos/presentation/screens/orders/order_detail_screen.dart';
+import 'package:flutter_pos/presentation/widgets/order_card.dart';
 
 class OrderListScreen extends StatefulWidget {
   const OrderListScreen({super.key});
@@ -174,7 +174,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Orders',
+                      'Penjualan',
                       style: AppTypography.headlineMedium.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

@@ -1,5 +1,5 @@
-import 'package:flutter_pos_offline/data/database/database_helper.dart';
-import 'package:flutter_pos_offline/data/models/customer.dart';
+import 'package:flutter_pos/data/database/database_helper.dart';
+import 'package:flutter_pos/data/models/customer.dart';
 
 class CustomerRepository {
   final DatabaseHelper _databaseHelper;
@@ -277,5 +277,26 @@ class CustomerRepository {
       'SELECT COUNT(*) as count FROM customers',
     );
     return result.first['count'] as int;
+  }
+  /// Add multiple customers (for import)
+  Future<void> addCustomers(List<Customer> customers) async {
+    final db = await _databaseHelper.database;
+    final batch = db.batch();
+    final now = DateTime.now().toIso8601String();
+
+    for (var customer in customers) {
+      batch.insert('customers', {
+        'name': customer.name.trim(),
+        'phone': customer.phone?.trim(),
+        'address': customer.address?.trim(),
+        'notes': customer.notes?.trim(),
+        'total_orders': 0,
+        'total_spent': 0,
+        'created_at': now,
+        'updated_at': now,
+      });
+    }
+
+    await batch.commit(noResult: true);
   }
 }

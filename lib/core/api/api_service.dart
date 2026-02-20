@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter_pos_offline/core/api/api_config.dart';
-import 'package:flutter_pos_offline/core/services/log_service.dart';
+import 'package:flutter_pos/core/api/api_config.dart';
+import 'package:flutter_pos/core/services/log_service.dart';
 
 class ApiService {
   final Dio _dio;

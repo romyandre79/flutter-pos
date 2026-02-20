@@ -1,8 +1,8 @@
-import 'package:flutter_pos_offline/data/database/database_helper.dart';
-import 'package:flutter_pos_offline/data/models/order.dart';
-import 'package:flutter_pos_offline/data/models/order_item.dart';
-import 'package:flutter_pos_offline/data/models/payment.dart';
-import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
+import 'package:flutter_pos/data/database/database_helper.dart';
+import 'package:flutter_pos/data/models/order.dart';
+import 'package:flutter_pos/data/models/order_item.dart';
+import 'package:flutter_pos/data/models/payment.dart';
+import 'package:flutter_pos/data/repositories/customer_repository.dart';
 
 class OrderRepository {
   final DatabaseHelper _databaseHelper;

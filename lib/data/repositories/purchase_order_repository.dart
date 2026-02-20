@@ -1,7 +1,7 @@
-import 'package:flutter_pos_offline/data/database/database_helper.dart';
-import 'package:flutter_pos_offline/data/models/purchase_order.dart';
-import 'package:flutter_pos_offline/data/models/purchase_order_item.dart';
-import 'package:flutter_pos_offline/data/models/supplier.dart';
+import 'package:flutter_pos/data/database/database_helper.dart';
+import 'package:flutter_pos/data/models/purchase_order.dart';
+import 'package:flutter_pos/data/models/purchase_order_item.dart';
+import 'package:flutter_pos/data/models/supplier.dart';
 
 class PurchaseOrderRepository {
   final DatabaseHelper _databaseHelper;
@@ -76,25 +76,28 @@ class PurchaseOrderRepository {
     final db = await _databaseHelper.database;
     
     return await db.transaction((txn) async {
+      final poMap = po.toMap();
+      poMap.remove('id');
+      poMap['created_at'] = DateTime.now().toIso8601String();
+      poMap['updated_at'] = DateTime.now().toIso8601String();
+      poMap['is_synced'] = 0; // New PO is not synced
+
       // Insert PO
-        final poId = await txn.insert('purchase_orders', {
-        ...po.toMap(),
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      }..remove('id')); // Let DB generate ID
+        final poId = await txn.insert('purchase_orders', poMap);
 
       // Insert Items
       List<PurchaseOrderItem> newItems = [];
       for (final item in po.items) {
-        final itemId = await txn.insert('purchase_order_items', {
-          ...item.toMap(),
-          'purchase_order_id': poId,
-          'created_at': DateTime.now().toIso8601String(),
-        }..remove('id'));
+        final itemMap = item.toMap();
+        itemMap.remove('id');
+        itemMap['purchase_order_id'] = poId;
+        itemMap['created_at'] = DateTime.now().toIso8601String();
+        
+        final itemId = await txn.insert('purchase_order_items', itemMap);
         newItems.add(item.copyWith(id: itemId, purchaseOrderId: poId));
       }
 
-      return po.copyWith(id: poId, items: newItems);
+      return po.copyWith(id: poId, items: newItems, isSynced: false);
     });
   }
 
@@ -106,10 +109,44 @@ class PurchaseOrderRepository {
       {
         'status': status,
         'updated_at': DateTime.now().toIso8601String(),
+        'is_synced': 0, // Mark as unsynced so it uploads again if needed
       },
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  // Update entire PO
+  Future<void> updatePurchaseOrder(PurchaseOrder po) async {
+    final db = await _databaseHelper.database;
+    await db.transaction((txn) async {
+       // Update PO details
+       await txn.update(
+         'purchase_orders',
+         {
+           ...po.toMap(),
+           'updated_at': DateTime.now().toIso8601String(),
+           'is_synced': 0,
+         }..remove('id'),
+         where: 'id = ?',
+         whereArgs: [po.id],
+       );
+
+       // Delete existing items and re-insert (simplest strategy for now)
+       await txn.delete(
+         'purchase_order_items', 
+         where: 'purchase_order_id = ?', 
+         whereArgs: [po.id]
+       );
+
+       for (final item in po.items) {
+          final itemMap = item.toMap();
+          itemMap.remove('id');
+          itemMap['purchase_order_id'] = po.id;
+          itemMap['created_at'] = DateTime.now().toIso8601String();
+          await txn.insert('purchase_order_items', itemMap);
+       }
+    });
   }
 
   // Delete PO (Cascade delete items handled by DB schema if configured, but safe to do manual or rely on FK)

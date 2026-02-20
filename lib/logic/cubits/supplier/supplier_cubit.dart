@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/data/models/supplier.dart';
-import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
-import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_state.dart';
+import 'package:flutter_pos/data/models/supplier.dart';
+import 'package:flutter_pos/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos/logic/cubits/supplier/supplier_state.dart';
 
 class SupplierCubit extends Cubit<SupplierState> {
   final SupplierRepository _supplierRepository;
@@ -23,7 +23,7 @@ class SupplierCubit extends Cubit<SupplierState> {
   Future<void> addSupplier(Supplier supplier) async {
     try {
       emit(SupplierLoading());
-      await _supplierRepository.createSupplier(supplier);
+      await _supplierRepository.addSupplier(supplier);
       emit(const SupplierOperationSuccess('Supplier added successfully'));
       loadSuppliers(); // Reload list
     } catch (e) {

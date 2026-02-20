@@ -7,7 +7,6 @@ class Supplier {
   final String? email;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-
   final int? serverId;
 
   Supplier({

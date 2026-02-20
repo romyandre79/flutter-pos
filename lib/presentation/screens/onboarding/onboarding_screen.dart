@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -54,7 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     ),
     OnboardingData(
       icon: Icons.wifi_off_rounded,
-      title: '100% Full Offline',
+      title: '100% Full',
       subtitle: 'Jalan Tanpa Internet!',
       description:
           'Tidak perlu khawatir koneksi internet putus.\nAplikasi tetap berjalan lancar kapanpun.\nData tersimpan aman di perangkat Anda.',

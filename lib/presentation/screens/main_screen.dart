@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/data/models/user.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_pos_offline/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/user/user_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/report/report_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/dashboard/dashboard_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/reports/report_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/settings/settings_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/pos/pos_screen.dart';
-import 'package:flutter_pos_offline/logic/cubits/pos/pos_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/purchasing/purchase_order_list_screen.dart';
-import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_cubit.dart';
-import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/customer_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/order_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/payment_repository.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/data/models/user.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos/logic/cubits/order/order_cubit.dart';
+import 'package:flutter_pos/logic/cubits/user/user_cubit.dart';
+import 'package:flutter_pos/logic/cubits/report/report_cubit.dart';
+import 'package:flutter_pos/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:flutter_pos/presentation/screens/reports/report_screen.dart';
+import 'package:flutter_pos/presentation/screens/settings/settings_screen.dart';
+import 'package:flutter_pos/presentation/screens/pos/pos_screen.dart';
+import 'package:flutter_pos/presentation/screens/orders/order_list_screen.dart';
+import 'package:flutter_pos/logic/cubits/pos/pos_cubit.dart';
+import 'package:flutter_pos/logic/cubits/supplier/supplier_cubit.dart';
+import 'package:flutter_pos/presentation/screens/purchasing/purchase_order_list_screen.dart';
+import 'package:flutter_pos/logic/cubits/purchase_order/purchase_order_cubit.dart';
+import 'package:flutter_pos/data/repositories/product_repository.dart';
+import 'package:flutter_pos/data/repositories/purchase_order_repository.dart';
+import 'package:flutter_pos/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos/data/repositories/customer_repository.dart';
+import 'package:flutter_pos/data/repositories/order_repository.dart';
+import 'package:flutter_pos/data/repositories/payment_repository.dart';
 
 
 class MainScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   late OrderCubit _orderCubit;
+  PosCubit? _posCubit;
 
   @override
   void initState() {
@@ -48,6 +50,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void dispose() {
     _orderCubit.close();
+    _posCubit?.close();
     super.dispose();
   }
 
@@ -73,11 +76,14 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ];
 
+        final double screenWidth = MediaQuery.of(context).size.width;
+        final bool isLargeScreen = screenWidth > 600;
+
         if (isOwner || user.role == UserRole.kasir) {
           navItems.add(
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.point_of_sale_outlined),
-              activeIcon: Icon(Icons.point_of_sale),
+            BottomNavigationBarItem(
+              icon: Icon(isLargeScreen ? Icons.point_of_sale_outlined : Icons.receipt_long_outlined),
+              activeIcon: Icon(isLargeScreen ? Icons.point_of_sale : Icons.receipt_long),
               label: 'Kasir',
             ),
           );
@@ -117,20 +123,47 @@ class _MainScreenState extends State<MainScreen> {
         final screens = <Widget>[
           BlocProvider.value(
             value: _orderCubit,
-            child: const DashboardScreen(),
+            child: DashboardScreen(
+              onSwitchTab: (index) {
+                setState(() => _currentIndex = index);
+                // Trigger reload if switching to Kasir (index 1) which might be PosScreen or OrderListScreen
+                final isLargeScreen = MediaQuery.of(context).size.width > 800;
+                if (index == 1) {
+                  if (isLargeScreen) {
+                    _posCubit?.loadProducts();
+                  } else {
+                     // Optionally reload orders
+                     _orderCubit.loadOrders();
+                  }
+                }
+              },
+            ),
           ),
         ];
 
         if (isOwner || user.role == UserRole.kasir) {
-           // Add POS Screen
-           screens.add(
-            BlocProvider(
-              create: (context) => PosCubit(
-                context.read<ProductRepository>(),
-              )..loadProducts(),
-              child: PosScreen(),
-            ),
-          );
+          if (isLargeScreen) {
+             // Add POS Screen for large screens
+             // Initialize PosCubit if not already done
+             _posCubit ??= PosCubit(
+               context.read<ProductRepository>(),
+             )..loadProducts();
+             
+             screens.add(
+              BlocProvider.value(
+                value: _posCubit!,
+                child: const PosScreen(),
+              ),
+            );
+          } else {
+            // Add OrderListScreen for small screens
+            screens.add(
+              BlocProvider.value(
+                value: _orderCubit,
+                child: const OrderListScreen(),
+              ),
+            );
+          }
         }
 
 
@@ -212,7 +245,13 @@ class _MainScreenState extends State<MainScreen> {
 
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => setState(() => _currentIndex = index),
+                  onTap: () {
+                    setState(() => _currentIndex = index);
+                    // If switching to POS (Kasir) tab, reload products
+                    if (item.label == 'Kasir') {
+                      _posCubit?.loadProducts();
+                    }
+                  },
                   behavior: HitTestBehavior.opaque,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

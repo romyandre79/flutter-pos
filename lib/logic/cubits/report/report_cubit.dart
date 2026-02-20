@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/data/repositories/report_repository.dart';
-import 'package:flutter_pos_offline/core/services/export_service.dart';
-import 'package:flutter_pos_offline/logic/cubits/report/report_state.dart';
+import 'package:flutter_pos/data/repositories/report_repository.dart';
+import 'package:flutter_pos/core/services/export_service.dart';
+import 'package:flutter_pos/logic/cubits/report/report_state.dart';
 
 class ReportCubit extends Cubit<ReportState> {
   final ReportRepository _reportRepository;
@@ -37,10 +37,15 @@ class ReportCubit extends Cubit<ReportState> {
     emit(const ReportExporting());
 
     try {
-      final filePath = await _exportService.exportOrdersToExcel(
+      final filePath = await _exportService.exportOrders(
         currentState.orders,
-        currentState.data,
+        currentState.data.startDate,
+        currentState.data.endDate,
       );
+      
+      if (filePath == null) {
+          throw Exception('Gagal membuat file excel');
+      }
 
       // Share the file
       await _exportService.shareFile(filePath);

@@ -1,5 +1,5 @@
-import 'package:flutter_pos_offline/data/database/database_helper.dart';
-import 'package:flutter_pos_offline/data/models/supplier.dart';
+import 'package:flutter_pos/data/database/database_helper.dart';
+import 'package:flutter_pos/data/models/supplier.dart';
 
 class SupplierRepository {
   final DatabaseHelper _databaseHelper;
@@ -13,7 +13,7 @@ class SupplierRepository {
     return result.map((map) => Supplier.fromMap(map)).toList();
   }
 
-  Future<Supplier> createSupplier(Supplier supplier) async {
+  Future<Supplier> addSupplier(Supplier supplier) async {
     final db = await _databaseHelper.database;
     final id = await db.insert('suppliers', {
       ...supplier.toMap(),

@@ -44,6 +44,7 @@ class Product extends Equatable {
   final ProductType type;
   final int? durationDays; // Only for services
   final String? imageUrl;
+  final String? barcode;
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -60,6 +61,7 @@ class Product extends Equatable {
     required this.type,
     this.durationDays,
     this.imageUrl,
+    this.barcode,
     this.isActive = true,
     this.createdAt,
     this.updatedAt,
@@ -81,6 +83,7 @@ class Product extends Equatable {
       'type': type.value,
       'duration_days': durationDays,
       'image_url': imageUrl,
+      'barcode': barcode,
       'is_active': isActive ? 1 : 0,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
@@ -100,6 +103,7 @@ class Product extends Equatable {
       type: ProductTypeExtension.fromString(map['type'] as String),
       durationDays: map['duration_days'] as int?,
       imageUrl: map['image_url'] as String?,
+      barcode: map['barcode'] as String?,
       isActive: (map['is_active'] as int?) == 1,
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
@@ -122,6 +126,7 @@ class Product extends Equatable {
     ProductType? type,
     int? durationDays,
     String? imageUrl,
+    String? barcode,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -138,6 +143,7 @@ class Product extends Equatable {
       type: type ?? this.type,
       durationDays: durationDays ?? this.durationDays,
       imageUrl: imageUrl ?? this.imageUrl,
+      barcode: barcode ?? this.barcode,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -157,6 +163,7 @@ class Product extends Equatable {
         type,
         durationDays,
         imageUrl,
+        barcode,
         isActive,
         createdAt,
         updatedAt,

@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
-        android:label="POS Offline"
+        android:label="Kreatif POS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/data/models/user.dart';
-import 'package:flutter_pos_offline/data/repositories/user_repository.dart';
-import 'package:flutter_pos_offline/logic/cubits/user/user_state.dart';
+import 'package:flutter_pos/data/models/user.dart';
+import 'package:flutter_pos/data/repositories/user_repository.dart';
+import 'package:flutter_pos/logic/cubits/user/user_state.dart';
 
 class UserCubit extends Cubit<UserState> {
   final UserRepository _userRepository;

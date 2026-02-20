@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/data/models/purchase_order.dart';
-import 'package:flutter_pos_offline/data/repositories/purchase_order_repository.dart';
-import 'package:flutter_pos_offline/logic/cubits/purchase_order/purchase_order_state.dart';
+import 'package:flutter_pos/data/models/purchase_order.dart';
+import 'package:flutter_pos/data/repositories/purchase_order_repository.dart';
+import 'package:flutter_pos/logic/cubits/purchase_order/purchase_order_state.dart';
 
 class PurchaseOrderCubit extends Cubit<PurchaseOrderState> {
   final PurchaseOrderRepository _repository;

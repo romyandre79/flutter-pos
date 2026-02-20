@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter_pos_offline/data/models/supplier.dart';
+import 'package:flutter_pos/data/models/supplier.dart';
 
 abstract class SupplierState extends Equatable {
   const SupplierState();

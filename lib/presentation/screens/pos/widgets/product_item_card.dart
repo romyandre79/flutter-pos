@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
-import 'package:flutter_pos_offline/data/models/product.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/core/utils/currency_formatter.dart';
+import 'package:flutter_pos/data/models/product.dart';
 
 class ProductItemCard extends StatelessWidget {
   final Product product;

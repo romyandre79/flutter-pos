@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter_pos_offline/data/models/order_item.dart';
-import 'package:flutter_pos_offline/data/models/payment.dart';
+import 'package:flutter_pos/data/models/order_item.dart';
+import 'package:flutter_pos/data/models/payment.dart';
 
 enum OrderStatus { pending, process, ready, done }
 
@@ -213,6 +213,7 @@ class Order extends Equatable {
 
   // Aliases for printer service
   String get invoiceNumber => invoiceNo;
+  String get statusDisplay => status.displayName;
   int get subtotal => totalPrice;
   int get discount => 0; // No discount feature yet
   int get totalAmount => totalPrice;

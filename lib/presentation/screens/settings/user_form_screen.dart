@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/data/models/user.dart';
-import 'package:flutter_pos_offline/logic/cubits/user/user_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/user/user_state.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/data/models/user.dart';
+import 'package:flutter_pos/logic/cubits/user/user_cubit.dart';
+import 'package:flutter_pos/logic/cubits/user/user_state.dart';
 
 class UserFormScreen extends StatefulWidget {
   final User? user;
@@ -558,7 +558,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
     final permissions = isOwner
         ? [
             _PermissionItem('Dashboard', 'Full access', true),
-            _PermissionItem('Orders', 'Full CRUD', true),
+            _PermissionItem('Penjualan', 'Full CRUD', true),
             _PermissionItem('Services', 'Full CRUD', true),
             _PermissionItem('Customers', 'Full + Export', true),
             _PermissionItem('Master Item', 'Full CRUD', true),
@@ -569,7 +569,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
           ]
         : [
             _PermissionItem('Dashboard', 'View only', true),
-            _PermissionItem('Orders', 'Create, View, Update', true),
+            _PermissionItem('Penjualan', 'Create, View, Update', true),
             _PermissionItem('Services', 'View only', true),
             _PermissionItem('Customers', 'View only', true),
             _PermissionItem('Master Item', 'View only', true),

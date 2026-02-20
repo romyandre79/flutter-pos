@@ -1,9 +1,9 @@
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_pos_offline/data/models/order.dart';
-import 'package:flutter_pos_offline/data/repositories/settings_repository.dart';
-import 'package:flutter_pos_offline/core/utils/currency_formatter.dart';
-import 'package:flutter_pos_offline/core/utils/date_formatter.dart';
-import 'package:flutter_pos_offline/core/constants/app_constants.dart';
+import 'package:flutter_pos/data/models/order.dart';
+import 'package:flutter_pos/data/repositories/settings_repository.dart';
+import 'package:flutter_pos/core/utils/currency_formatter.dart';
+import 'package:flutter_pos/core/utils/date_formatter.dart';
+import 'package:flutter_pos/core/constants/app_constants.dart';
 
 class WhatsAppService {
   static final WhatsAppService _instance = WhatsAppService._internal();

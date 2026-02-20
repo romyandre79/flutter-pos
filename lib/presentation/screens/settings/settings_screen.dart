@@ -1,30 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:flutter_pos_offline/core/api/api_config.dart';
-import 'package:flutter_pos_offline/core/constants/app_constants.dart';
-import 'package:flutter_pos_offline/core/theme/app_theme.dart';
-import 'package:flutter_pos_offline/data/models/user.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_pos_offline/logic/cubits/settings/settings_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/settings/settings_state.dart';
-import 'package:flutter_pos_offline/logic/cubits/user/user_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/customer/customer_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/settings/user_management_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/settings/printer_settings_screen.dart';
-import 'package:flutter_pos_offline/logic/cubits/printer/printer_cubit.dart';
-import 'package:flutter_pos_offline/logic/cubits/product/product_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/products/product_list_screen.dart';
-import 'package:flutter_pos_offline/presentation/screens/customers/customer_list_screen.dart';
-import 'package:flutter_pos_offline/data/repositories/product_repository.dart';
-import 'package:flutter_pos_offline/data/repositories/supplier_repository.dart';
-import 'package:flutter_pos_offline/logic/cubits/supplier/supplier_cubit.dart';
-import 'package:flutter_pos_offline/presentation/screens/purchasing/supplier_list_screen.dart';
-import 'package:flutter_pos_offline/logic/sync/sync_cubit.dart';
-import 'package:flutter_pos_offline/logic/sync/sync_state.dart';
-import 'package:flutter_pos_offline/core/api/api_service.dart';
+import 'package:flutter_pos/core/api/api_config.dart';
+import 'package:flutter_pos/core/constants/app_constants.dart';
+import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:flutter_pos/data/models/user.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_pos/logic/cubits/auth/auth_state.dart';
+import 'package:flutter_pos/logic/cubits/settings/settings_cubit.dart';
+import 'package:flutter_pos/logic/cubits/settings/settings_state.dart';
+import 'package:flutter_pos/logic/cubits/user/user_cubit.dart';
+import 'package:flutter_pos/logic/cubits/customer/customer_cubit.dart';
+import 'package:flutter_pos/presentation/screens/settings/user_management_screen.dart';
+import 'package:flutter_pos/presentation/screens/settings/printer_settings_screen.dart';
+import 'package:flutter_pos/logic/cubits/printer/printer_cubit.dart';
+import 'package:flutter_pos/logic/cubits/product/product_cubit.dart';
+import 'package:flutter_pos/presentation/screens/products/product_list_screen.dart';
+import 'package:flutter_pos/presentation/screens/customers/customer_list_screen.dart';
+import 'package:flutter_pos/data/repositories/product_repository.dart';
+import 'package:flutter_pos/data/repositories/supplier_repository.dart';
+import 'package:flutter_pos/logic/cubits/supplier/supplier_cubit.dart';
+import 'package:flutter_pos/presentation/screens/purchasing/supplier_list_screen.dart';
+import 'package:flutter_pos/data/repositories/unit_repository.dart';
+import 'package:flutter_pos/logic/cubits/unit/unit_cubit.dart';
+import 'package:flutter_pos/presentation/screens/unit/unit_list_screen.dart';
+import 'package:flutter_pos/logic/sync/sync_cubit.dart';
+import 'package:flutter_pos/logic/sync/sync_state.dart';
+import 'package:flutter_pos/core/api/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_pos/data/services/database_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -316,6 +320,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
         }
       },
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgRadius),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppThemeColors.primarySurface,
+                borderRadius: AppRadius.smRadius,
+              ),
+              child: const Icon(Icons.info, color: AppThemeColors.primary),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Text('About', style: AppTypography.titleLarge),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildAboutRow('Creator', 'Kreatif MajuMU'),
+            const SizedBox(height: AppSpacing.md),
+            _buildAboutRow('PhoneNo', '081932701147'),
+            const SizedBox(height: AppSpacing.md),
+            _buildAboutRow('Address', 'Jl Serut Jaya No 74, Bekasi'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Tutup',
+              style: AppTypography.labelMedium.copyWith(color: AppThemeColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.labelSmall.copyWith(color: AppThemeColors.textSecondary),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w500),
+        ),
+      ],
     );
   }
 
@@ -620,6 +684,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     );
                                   },
                                 ),
+                              if (user != null) _buildDivider(),
+                              _buildSettingTile(
+                                context: context,
+                                icon: Icons.straighten,
+                                title: 'Master Satuan',
+                                subtitle: 'Kelola satuan produk',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const UnitListScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           ),
 
@@ -646,6 +725,117 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ],
                           ),
+
+                          // Data Management Section (Owner only)
+                          if (user != null && user.role == UserRole.owner)
+                            _buildSection(
+                              title: 'Manajemen Data',
+                              children: [
+                                _buildSettingTile(
+                                  context: context,
+                                  icon: Icons.save,
+                                  title: 'Backup Database',
+                                  subtitle: 'Simpan data ke penyimpanan lokal',
+                                  onTap: () async {
+                                    try {
+                                      await DatabaseService().backupDatabase();
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Backup berhasil'), backgroundColor: Colors.green),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Backup gagal: $e'), backgroundColor: Colors.red),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                                _buildDivider(),
+                                _buildSettingTile(
+                                  context: context,
+                                  icon: Icons.restore,
+                                  title: 'Restore Database',
+                                  subtitle: 'Pulihkan data dari file backup',
+                                  onTap: () async {
+                                    try {
+                                        // Confirm first
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            title: const Text('Konfirmasi Restore'),
+                                            content: const Text('Restore akan menimpa data yang ada. Lanjutkan?'),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+                                              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restore')),
+                                            ],
+                                          ),
+                                        );
+
+                                        if (confirm == true) {
+                                          await DatabaseService().restoreDatabase();
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Restore berhasil. Silakan restart aplikasi.'), backgroundColor: Colors.green),
+                                            );
+                                          }
+                                        }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Restore gagal: $e'), backgroundColor: Colors.red),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                                _buildDivider(),
+                                _buildSettingTile(
+                                  context: context,
+                                  icon: Icons.delete_forever,
+                                  title: 'Reset Database',
+                                  subtitle: 'Hapus semua data (Hati-hati!)',
+                                  onTap: () async {
+                                     final confirm = await showDialog<bool>(
+                                       context: context,
+                                       builder: (ctx) => AlertDialog(
+                                         title: const Text('Reset Database?'),
+                                         content: const Text('Semua data akan dihapus permanen. Tindakan ini tidak dapat dibatalkan!'),
+                                         actions: [
+                                           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+                                           ElevatedButton(
+                                             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                             onPressed: () => Navigator.pop(ctx, true),
+                                             child: const Text('Reset', style: TextStyle(color: Colors.white)),
+                                           ),
+                                         ],
+                                       ),
+                                     );
+
+                                     if (confirm == true) {
+                                        try {
+                                          await DatabaseService().resetDatabase();
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Database berhasil di-reset'), backgroundColor: Colors.green),
+                                            );
+                                            // Optionally logout or restart
+                                            context.read<AuthCubit>().logout();
+                                          }
+                                        } catch (e) {
+                                           if (mounted) {
+                                             ScaffoldMessenger.of(context).showSnackBar(
+                                               SnackBar(content: Text('Reset gagal: $e'), backgroundColor: Colors.red),
+                                             );
+                                           }
+                                        }
+                                     }
+                                  },
+                                ),
+                              ],
+                            ),
 
                           // App Settings Section
                           _buildSection(
@@ -739,6 +929,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 title: 'Ubah Password',
                                 subtitle: 'Ganti password akun Anda',
                                 onTap: () => _showChangePasswordDialog(context),
+                              ),
+                            ],
+                          ),
+
+                          // About Section
+                          _buildSection(
+                            title: 'Tentang Aplikasi',
+                            children: [
+                              _buildSettingTile(
+                                context: context,
+                                icon: Icons.info_outline,
+                                title: AppConstants.appName,
+                                subtitle: 'Versi ${AppConstants.appVersion}',
+                                showArrow: false,
+                                onTap: null,
+                              ),
+                              _buildDivider(),
+                              _buildSettingTile(
+                                context: context,
+                                icon: Icons.info,
+                                title: 'About',
+                                subtitle: 'Informasi Pembuat',
+                                onTap: () => _showAboutDialog(context),
                               ),
                             ],
                           ),

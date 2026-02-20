@@ -1,5 +1,5 @@
-import 'package:flutter_pos_offline/data/models/purchase_order_item.dart';
-import 'package:flutter_pos_offline/data/models/supplier.dart';
+import 'package:flutter_pos/data/models/purchase_order_item.dart';
+import 'package:flutter_pos/data/models/supplier.dart';
 
 class PurchaseOrder {
   final int? id;
@@ -11,6 +11,8 @@ class PurchaseOrder {
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final bool isSynced;
+  final int? serverId;
   
   // Relations
   final Supplier? supplier;
@@ -26,6 +28,8 @@ class PurchaseOrder {
     this.notes,
     this.createdAt,
     this.updatedAt,
+    this.isSynced = false,
+    this.serverId,
     this.supplier,
     this.items = const [],
   });
@@ -41,6 +45,8 @@ class PurchaseOrder {
       'notes': notes,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'is_synced': isSynced ? 1 : 0,
+      'server_id': serverId,
     };
   }
 
@@ -55,6 +61,8 @@ class PurchaseOrder {
       notes: map['notes'] as String?,
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
       updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at']) : null,
+      isSynced: (map['is_synced'] as int?) == 1,
+      serverId: map['server_id'] as int?,
       supplier: supplier,
       items: items ?? [],
     );
@@ -70,6 +78,8 @@ class PurchaseOrder {
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isSynced,
+    int? serverId,
     Supplier? supplier,
     List<PurchaseOrderItem>? items,
   }) {
@@ -83,6 +93,8 @@ class PurchaseOrder {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
+      serverId: serverId ?? this.serverId,
       supplier: supplier ?? this.supplier,
       items: items ?? this.items,
     );

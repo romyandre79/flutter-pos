@@ -1,5 +1,5 @@
-import 'package:flutter_pos_offline/data/database/database_helper.dart';
-import 'package:flutter_pos_offline/data/models/product.dart';
+import 'package:flutter_pos/data/database/database_helper.dart';
+import 'package:flutter_pos/data/models/product.dart';
 
 class ProductRepository {
   final DatabaseHelper _databaseHelper;
@@ -41,6 +41,20 @@ class ProductRepository {
       'products',
       where: 'id = ?',
       whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return Product.fromMap(maps.first);
+    }
+    return null;
+  }
+  
+  Future<Product?> getProductByBarcode(String barcode) async {
+    final db = await _databaseHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'products',
+      where: 'barcode = ? AND is_active = 1',
+      whereArgs: [barcode],
     );
 
     if (maps.isNotEmpty) {
