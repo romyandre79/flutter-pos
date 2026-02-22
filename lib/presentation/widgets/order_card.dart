@@ -79,6 +79,26 @@ class OrderCard extends StatelessWidget {
                   ],
                 ),
 
+                const SizedBox(height: AppSpacing.sm),
+
+                // Transaction Date
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: AppThemeColors.textSecondary,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      DateFormatter.formatDateTime(order.orderDate),
+                      style: AppTypography.labelSmall.copyWith(
+                        color: AppThemeColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: AppSpacing.md),
 
                 // Divider
@@ -86,6 +106,7 @@ class OrderCard extends StatelessWidget {
                   height: 1,
                   color: AppThemeColors.divider,
                 ),
+
 
                 const SizedBox(height: AppSpacing.md),
 

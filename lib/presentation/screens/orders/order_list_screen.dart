@@ -9,6 +9,8 @@ import 'package:flutter_pos/logic/cubits/service/service_cubit.dart';
 import 'package:flutter_pos/presentation/screens/orders/order_form_screen.dart';
 import 'package:flutter_pos/presentation/screens/orders/order_detail_screen.dart';
 import 'package:flutter_pos/presentation/widgets/order_card.dart';
+import 'package:flutter_pos/logic/cubits/product/product_cubit.dart';
+import 'package:flutter_pos/data/repositories/product_repository.dart';
 
 class OrderListScreen extends StatefulWidget {
   const OrderListScreen({super.key});
@@ -422,18 +424,24 @@ class _OrderListScreenState extends State<OrderListScreen> {
   }
 
   void _navigateToCreateOrder() {
+    final orderCubit = context.read<OrderCubit>();
+    final productRepo = context.read<ProductRepository>();
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => MultiBlocProvider(
           providers: [
-            BlocProvider.value(value: context.read<OrderCubit>()),
+            BlocProvider.value(value: orderCubit),
             BlocProvider(create: (_) => ServiceCubit()..loadServices()),
             BlocProvider(create: (_) => CustomerCubit()..loadCustomers()),
+            BlocProvider(create: (_) => ProductCubit(productRepo)..loadProducts()),
           ],
           child: const OrderFormScreen(),
         ),
       ),
     );
   }
+
+
 }

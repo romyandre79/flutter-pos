@@ -7,6 +7,19 @@ class PurchaseOrder {
   final DateTime orderDate;
   final DateTime? expectedDate;
   final String status; // 'pending', 'received', 'cancelled'
+  String get statusDisplay {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Belum Dikirim';
+      case 'received':
+        return 'Sudah Terima';
+      case 'cancelled':
+        return 'Batal';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
   final int totalAmount;
   final String? notes;
   final DateTime? createdAt;

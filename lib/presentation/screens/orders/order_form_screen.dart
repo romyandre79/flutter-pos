@@ -9,6 +9,7 @@ import 'package:flutter_pos/data/models/customer.dart';
 import 'package:flutter_pos/data/models/order_item.dart';
 import 'package:flutter_pos/data/models/payment.dart';
 import 'package:flutter_pos/data/models/product.dart';
+import 'package:flutter_pos/data/models/order.dart';
 import 'package:flutter_pos/logic/cubits/auth/auth_cubit.dart';
 import 'package:flutter_pos/logic/cubits/auth/auth_state.dart';
 import 'package:flutter_pos/logic/cubits/customer/customer_cubit.dart';
@@ -17,6 +18,8 @@ import 'package:flutter_pos/logic/cubits/order/order_cubit.dart';
 import 'package:flutter_pos/logic/cubits/order/order_state.dart';
 import 'package:flutter_pos/logic/cubits/product/product_cubit.dart';
 import 'package:flutter_pos/logic/cubits/product/product_state.dart';
+import 'package:flutter_pos/logic/cubits/unit/unit_cubit.dart';
+import 'package:flutter_pos/presentation/screens/orders/sales_order_item_editor.dart';
 
 class OrderFormScreen extends StatefulWidget {
   const OrderFormScreen({super.key});
@@ -32,18 +35,16 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   final _notesController = TextEditingController();
   final _paymentController = TextEditingController();
 
-  DateTime _dueDate = DateTime.now().add(const Duration(days: 3));
+  DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
   PaymentMethod _paymentMethod = PaymentMethod.cash;
+  OrderStatus _selectedStatus = OrderStatus.pending;
   bool _isLoading = false;
 
   // Selected customer
   Customer? _selectedCustomer;
 
   // Order items
-  final List<_OrderItemEntry> _items = [];
-
-  // Filter for products
-  int _selectedTab = 0; // 0: All, 1: Services, 2: Goods
+  final List<OrderItem> _items = [];
 
   int get _totalPrice {
     return _items.fold(0, (sum, item) => sum + item.subtotal);
@@ -52,7 +53,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   @override
   void initState() {
     super.initState();
-    // Load products when screen opens
     context.read<ProductCubit>().loadProducts();
   }
 
@@ -65,144 +65,89 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     super.dispose();
   }
 
-  void _toggleItem(Product product) {
-    setState(() {
-      final existing = _items.indexWhere((e) => e.product.id == product.id);
-      if (existing >= 0) {
-        // Sudah ada, hapus dari list
-        _items.removeAt(existing);
-      } else {
-        // Belum ada, tambahkan
-        _items.add(_OrderItemEntry(product: product));
-      }
-    });
+  void _addItem() async {
+    final productState = context.read<ProductCubit>().state;
+    List<Product> products = [];
+    if (productState is ProductLoaded) {
+      products = productState.products;
+    }
+
+    final newItem = await Navigator.push<OrderItem>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<UnitCubit>(),
+          child: SalesOrderItemEditor(products: products),
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (newItem != null) {
+      setState(() {
+        // Find if item already exists with same Product ID and Unit
+        final existingIndex = _items.indexWhere((item) =>
+            item.productId != null &&
+            item.productId == newItem.productId &&
+            item.unit == newItem.unit);
+
+        if (existingIndex != -1) {
+          final existingItem = _items[existingIndex];
+          final newQuantity = existingItem.quantity + newItem.quantity;
+
+          _items[existingIndex] = existingItem.copyWith(
+            quantity: newQuantity,
+            subtotal: (newQuantity * existingItem.pricePerUnit).round(),
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '${newItem.serviceName} jumlah bertambah menjadi $newQuantity ${newItem.unit}'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          _items.add(newItem);
+        }
+      });
+    }
+  }
+
+  void _editItem(int index) async {
+    final productState = context.read<ProductCubit>().state;
+    List<Product> products = [];
+    if (productState is ProductLoaded) {
+      products = productState.products;
+    }
+
+    final updatedItem = await Navigator.push<OrderItem>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<UnitCubit>(),
+          child: SalesOrderItemEditor(
+            products: products,
+            existingItem: _items[index],
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (updatedItem != null) {
+      setState(() {
+        _items[index] = updatedItem;
+      });
+    }
   }
 
   void _removeItem(int index) {
     setState(() {
       _items.removeAt(index);
     });
-  }
-
-  void _updateItemQuantity(int index, double quantity) {
-    setState(() {
-      _items[index].quantity = quantity;
-      _items[index].updateSubtotal();
-    });
-  }
-
-  void _showQuantityInputDialog(int index, _OrderItemEntry item) {
-    // For services/goods with unit 'kg', allow decimals. For 'pcs' etc, likely integer.
-    // Simplifying logic: if unit is 'kg', allow decimal.
-    final isDecimal = item.product.unit.toLowerCase() == 'kg';
-    final controller = TextEditingController(text: item.quantityDisplay);
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Masukkan Jumlah',
-          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              item.product.name,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: AppThemeColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              keyboardType: isDecimal
-                  ? const TextInputType.numberWithOptions(decimal: true)
-                  : TextInputType.number,
-              decoration: InputDecoration(
-                suffixText: item.product.unit,
-                hintText: isDecimal ? 'Contoh: 1.5' : 'Contoh: 3',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onSubmitted: (_) {
-                _submitQuantityInput(dialogContext, controller.text, index, item);
-              },
-            ),
-            if (isDecimal)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Bisa desimal, contoh: 0.5, 1.5, 2.3',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: AppThemeColors.textSecondary,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              'Batal',
-              style: GoogleFonts.poppins(color: AppThemeColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _submitQuantityInput(dialogContext, controller.text, index, item);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppThemeColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'OK',
-              style: GoogleFonts.poppins(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _submitQuantityInput(
-      BuildContext dialogContext, String input, int index, _OrderItemEntry item) {
-    final isDecimal = item.product.unit.toLowerCase() == 'kg';
-    // Replace comma with dot for decimal parsing
-    final normalizedInput = input.replaceAll(',', '.');
-    final parsed = double.tryParse(normalizedInput);
-
-    if (parsed == null || parsed <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Masukkan jumlah yang valid'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    double finalQuantity;
-    if (isDecimal) {
-      // For decimal supported units: allow decimal, round to 2 decimal places if needed
-      finalQuantity = double.parse(parsed.toStringAsFixed(2));
-    } else {
-      // For others: only integer
-      finalQuantity = parsed.roundToDouble();
-    }
-
-    Navigator.pop(dialogContext);
-    _updateItemQuantity(index, finalQuantity);
   }
 
   Future<void> _selectDueDate() async {
@@ -263,6 +208,17 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     }
 
     final payment = ThousandSeparatorFormatter.parseToInt(_paymentController.text);
+
+    // Validate Status 'Selesai' must be fully paid
+    if (_selectedStatus == OrderStatus.done && payment < _totalPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pesanan harus lunas jika status Selesai'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     // Jika bayar lebih dari total, tampilkan dialog konfirmasi kembalian
     if (payment > _totalPrice) {
@@ -392,18 +348,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     final authState = context.read<AuthCubit>().state;
     final userId = authState is AuthAuthenticated ? authState.user.id : null;
 
-    final orderItems = _items
-        .map((e) => OrderItem(
-              orderId: 0,
-              serviceId: null, // No longer using service table directly
-              productId: e.product.id,
-              serviceName: e.product.name,
-              quantity: e.quantity.toDouble(),
-              unit: e.product.unit,
-              pricePerUnit: e.product.price,
-              subtotal: e.subtotal,
-            ))
-        .toList();
+    final orderItems = _items;
 
     context.read<OrderCubit>().createOrder(
           customerName: _customerNameController.text,
@@ -417,6 +362,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
           createdBy: userId,
           initialPayment: payment,
           paymentMethod: _paymentMethod,
+          status: _selectedStatus,
         );
   }
 
@@ -434,7 +380,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Order ${state.order.invoiceNo} berhasil dibuat'),
+              content: Text('Penjualan ${state.order.invoiceNo} berhasil dibuat'),
               backgroundColor: AppColors.success,
             ),
           );
@@ -447,257 +393,366 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
           );
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Order Baru'),
-        ),
-        body: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Customer Section
-              _buildSectionTitle('Informasi Pelanggan'),
-              const SizedBox(height: 12),
+      child: BlocBuilder<ProductCubit, ProductState>(
+        builder: (context, productState) {
+          if (productState is ProductLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
 
-              // Customer selection card
-              if (_selectedCustomer != null) ...[
-                _buildSelectedCustomerCard(),
-                const SizedBox(height: 12),
-              ] else ...[
-                // Search existing customer button
-                InkWell(
-                  onTap: _showCustomerSearchDialog,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppThemeColors.primarySurface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppThemeColors.primary.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Penjualan Baru'),
+            ),
+            body: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Customer Section
+                    _buildSectionTitle('Informasi Pelanggan'),
+                    const SizedBox(height: 12),
+
+                    // Customer selection card
+                    if (_selectedCustomer != null) ...[
+                      _buildSelectedCustomerCard(),
+                      const SizedBox(height: 12),
+                    ] else ...[
+                      // Search existing customer button
+                      InkWell(
+                        onTap: _showCustomerSearchDialog,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppThemeColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppThemeColors.primarySurface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppThemeColors.primary.withValues(alpha: 0.3),
+                            ),
                           ),
-                          child: Icon(
-                            Icons.person_search,
-                            color: AppThemeColors.primary,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                'Pilih Pelanggan',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w500,
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppThemeColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.person_search,
                                   color: AppThemeColors.primary,
+                                  size: 20,
                                 ),
                               ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Pilih Pelanggan',
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w500,
+                                        color: AppThemeColors.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Cari dari daftar pelanggan',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: AppThemeColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                color: AppThemeColors.primary,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Divider with "atau"
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: AppThemeColors.border)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'atau input manual',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: AppThemeColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: AppThemeColors.border)),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                    ],
+
+                    TextFormField(
+                      controller: _customerNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Nama Pelanggan *',
+                        prefixIcon: const Icon(Icons.person_outline),
+                        enabled: _selectedCustomer == null,
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (v) =>
+                          v?.trim().isEmpty == true ? 'Nama tidak boleh kosong' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _customerPhoneController,
+                      decoration: InputDecoration(
+                        labelText: 'No. HP (Opsional)',
+                        prefixIcon: const Icon(Icons.phone_outlined),
+                        hintText: '08xx-xxxx-xxxx',
+                        enabled: _selectedCustomer == null,
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Items Section (List)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildSectionTitle('Daftar Item'),
+                          TextButton.icon(
+                            onPressed: _addItem,
+                            icon: const Icon(Icons.add, size: 16),
+                            label: const Text('Tambah'),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (_items.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppThemeColors.background,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppThemeColors.border),
+                        ),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.shopping_basket_outlined,
+                                size: 40,
+                                color: AppThemeColors.textSecondary.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(height: 8),
                               Text(
-                                'Cari dari daftar pelanggan',
+                                'Belum ada item',
+                                style: GoogleFonts.poppins(
+                                  color: AppThemeColors.textSecondary,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _addItem,
+                                child: const Text('Tambah Item Baru'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final item = _items[index];
+                          return Card(
+                            margin: EdgeInsets.zero,
+                            child: ListTile(
+                              title: Text(
+                                item.serviceName,
+                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: Text(
+                                '${item.quantity} ${item.unit} x ${CurrencyFormatter.format(item.pricePerUnit)}',
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   color: AppThemeColors.textSecondary,
                                 ),
                               ),
-                            ],
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    CurrencyFormatter.format(item.subtotal),
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppThemeColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                                    onPressed: () => _editItem(index),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                                    onPressed: () => _removeItem(index),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                    const SizedBox(height: 24),
+
+                    // Due Date
+                    _buildSectionTitle('Tanggal Ambil (Estimasi Selesai)'),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: _selectDueDate,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppThemeColors.border),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today, color: AppThemeColors.primary),
+                            const SizedBox(width: 12),
+                            Text(
+                              '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}',
+                              style: GoogleFonts.poppins(fontSize: 16),
+                            ),
+                            const Spacer(),
+                            const Icon(Icons.arrow_drop_down),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Notes
+                    _buildSectionTitle('Catatan (Opsional)'),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: const InputDecoration(
+                        labelText: 'Catatan',
+                        prefixIcon: Icon(Icons.note_outlined),
+                      ),
+                      maxLines: 2,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Payment Section
+                    _buildSectionTitle('Pembayaran'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _paymentController,
+                            decoration: const InputDecoration(
+                              labelText: 'Bayar (DP/Lunas)',
+                              prefixText: 'Rp ',
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [ThousandSeparatorFormatter()],
                           ),
                         ),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          color: AppThemeColors.primary,
-                          size: 16,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<PaymentMethod>(
+                            initialValue: _paymentMethod,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Metode',
+                            ),
+                            items: PaymentMethod.values.map((method) {
+                              return DropdownMenuItem(
+                                value: method,
+                                child: Text(
+                                  method.displayName,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (v) {
+                              if (v != null) {
+                                setState(() => _paymentMethod = v);
+                              }
+                            },
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ),
+                    const SizedBox(height: 24),
 
-                const SizedBox(height: 16),
-
-                // Divider with "atau"
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: AppThemeColors.border)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'atau input manual',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppThemeColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: AppThemeColors.border)),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-              ],
-
-              TextFormField(
-                controller: _customerNameController,
-                decoration: InputDecoration(
-                  labelText: 'Nama Pelanggan *',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  enabled: _selectedCustomer == null,
-                ),
-                textCapitalization: TextCapitalization.words,
-                validator: (v) =>
-                    v?.trim().isEmpty == true ? 'Nama tidak boleh kosong' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _customerPhoneController,
-                decoration: InputDecoration(
-                  labelText: 'No. HP (Opsional)',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  hintText: '08xx-xxxx-xxxx',
-                  enabled: _selectedCustomer == null,
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-
-              const SizedBox(height: 24),
-
-              // Product/Service Items Section
-              _buildSectionTitle('Pilih Item'),
-              const SizedBox(height: 12),
-              
-              // Tabs for filtering
-              Row(
-                children: [
-                  _buildTabButton(0, 'Semua'),
-                  const SizedBox(width: 8),
-                  _buildTabButton(1, 'Layanan'),
-                  const SizedBox(width: 8),
-                  _buildTabButton(2, 'Barang'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              _buildProductSelector(),
-
-              const SizedBox(height: 16),
-
-              // Selected Items
-              if (_items.isNotEmpty) ...[
-                _buildSectionTitle('Item Dipilih'),
-                const SizedBox(height: 12),
-                ..._items.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final item = entry.value;
-                  return _buildItemCard(index, item);
-                }),
-              ],
-
-              const SizedBox(height: 24),
-
-              // Due Date
-              _buildSectionTitle('Tanggal Ambil (Estimasi Selesai)'),
-              const SizedBox(height: 12),
-              InkWell(
-                onTap: _selectDueDate,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppThemeColors.border),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_today, color: AppThemeColors.primary),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}',
-                        style: GoogleFonts.poppins(fontSize: 16),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.arrow_drop_down),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Notes
-              _buildSectionTitle('Catatan (Opsional)'),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Catatan',
-                  prefixIcon: Icon(Icons.note_outlined),
-                ),
-                maxLines: 2,
-              ),
-
-              const SizedBox(height: 24),
-
-              // Payment Section
-              _buildSectionTitle('Pembayaran'),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      controller: _paymentController,
+                    // Status Section
+                    _buildSectionTitle('Status Pesanan'),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<OrderStatus>(
+                      value: _selectedStatus,
                       decoration: const InputDecoration(
-                        labelText: 'Bayar (DP/Lunas)',
-                        prefixText: 'Rp ',
+                        labelText: 'Status',
+                        prefixIcon: Icon(Icons.info_outline),
+                        border: OutlineInputBorder(),
                       ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [ThousandSeparatorFormatter()],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<PaymentMethod>(
-                      initialValue: _paymentMethod,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Metode',
-                      ),
-                      items: PaymentMethod.values.map((method) {
+                      items: OrderStatus.values.map((status) {
                         return DropdownMenuItem(
-                          value: method,
-                          child: Text(
-                            method.displayName,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          value: status,
+                          child: Text(status.displayName),
                         );
                       }).toList(),
                       onChanged: (v) {
-                        if (v != null) setState(() => _paymentMethod = v);
+                        if (v != null) {
+                          setState(() => _selectedStatus = v);
+                        }
                       },
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
-
-              const SizedBox(height: 32),
-
-              // Total & Submit
+              
+              // Bottom Bar (Total & Submit)
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppThemeColors.primarySurface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -735,7 +790,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                                 ),
                               )
                             : Text(
-                                'Buat Order',
+                                'Buat Penjualan',
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -746,39 +801,11 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                   ],
                 ),
               ),
-
-              const SizedBox(height: 32),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTabButton(int index, String label) {
-    final isSelected = _selectedTab == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedTab = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppThemeColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected ? AppThemeColors.primary : AppThemeColors.border,
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              color: isSelected ? Colors.white : AppThemeColors.textSecondary,
-            ),
-          ),
-        ),
+      );
+        },
       ),
     );
   }
@@ -863,348 +890,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
         ],
       ),
     );
-  }
-
-  Widget _buildProductSelector() {
-    return BlocBuilder<ProductCubit, ProductState>(
-      builder: (context, state) {
-        if (state is ProductLoading && state is! ProductLoaded) {
-          return const Center(child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: CircularProgressIndicator(),
-          ));
-        }
-
-        List<Product> products = [];
-        if (state is ProductLoaded) {
-           if (_selectedTab == 0) {
-             products = state.products;
-           } else if (_selectedTab == 1) {
-             products = state.serviceList;
-           } else {
-             products = state.goodsList;
-           }
-        }
-        // Also handle the case where products are already loaded but we might be in another state like OperationSuccess
-        // Ideally Cubit should hold data. Using context.read to be safe if state is not loaded
-        if (state is! ProductLoaded) {
-          final cubit = context.read<ProductCubit>();
-          // Fallback if possible, or just wait for loaded state
-          if (cubit.state is ProductLoaded) {
-               final loaded = cubit.state as ProductLoaded;
-               if (_selectedTab == 0) {
-                 products = loaded.products;
-               } else if (_selectedTab == 1) {
-                 products = loaded.serviceList;
-               } else {
-                 products = loaded.goodsList;
-               }
-          }
-        }
-
-        if (products.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppThemeColors.border),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.category_outlined,
-                    size: 40,
-                    color: AppThemeColors.textSecondary.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Belum ada item',
-                    style: GoogleFonts.poppins(
-                      color: AppThemeColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    'Tambah item di menu Master Item',
-                    style: GoogleFonts.poppins(
-                      color: AppThemeColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppThemeColors.border),
-          ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: products.length,
-            separatorBuilder: (_, _) => Divider(
-              height: 1,
-              color: AppThemeColors.border,
-            ),
-            itemBuilder: (context, index) {
-              final product = products[index];
-              final isSelected = _items.any((e) => e.product.id == product.id);
-
-              return InkWell(
-                onTap: () => _toggleItem(product),
-                borderRadius: BorderRadius.vertical(
-                  top: index == 0 ? const Radius.circular(12) : Radius.zero,
-                  bottom: index == products.length - 1 ? const Radius.circular(12) : Radius.zero,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      // Checkbox
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppThemeColors.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: isSelected ? AppThemeColors.primary : AppThemeColors.textSecondary.withValues(alpha: 0.4),
-                            width: 2,
-                          ),
-                        ),
-                        child: isSelected
-                            ? const Icon(Icons.check, size: 16, color: Colors.white)
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
-                      // Product info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product.name,
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w500,
-                                color: AppThemeColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              'per ${product.unit}',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: AppThemeColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Price
-                      Text(
-                        CurrencyFormatter.format(product.price),
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          color: AppThemeColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildItemCard(int index, _OrderItemEntry item) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Row 1: Nama product dan tombol delete
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.product.name,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${CurrencyFormatter.format(item.product.price)}/${item.product.unit}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _removeItem(index),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.delete_outline,
-                      color: AppThemeColors.error,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Row 2: Quantity controls dan subtotal
-            Row(
-              children: [
-                // Quantity controls
-                _buildQuantityControls(index, item),
-                const Spacer(),
-                // Subtotal
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      CurrencyFormatter.format(item.subtotal),
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AppThemeColors.primary,
-                      ),
-                    ),
-                    Text(
-                      '${item.quantityDisplay} ${item.product.unit}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: AppThemeColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuantityControls(int index, _OrderItemEntry item) {
-    // Determine step based on unit. If generic, assume 1. If kg, 0.5.
-    final unicode = item.product.unit.toLowerCase();
-    final isDecimal = unicode == 'kg' || unicode == 'liter' || unicode == 'm';
-    final step = isDecimal ? 0.5 : 1.0;
-    final minQuantity = isDecimal ? 0.5 : 1.0;
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: AppThemeColors.border),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Minus button
-          InkWell(
-            onTap: () {
-              final newQuantity = item.quantity - step;
-              if (newQuantity >= minQuantity) {
-                _updateItemQuantity(index, newQuantity);
-              } else {
-                _removeItem(index);
-              }
-            },
-            borderRadius: const BorderRadius.horizontal(left: Radius.circular(7)),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.remove,
-                color: AppThemeColors.primary,
-                size: 18,
-              ),
-            ),
-          ),
-          // Quantity display - tappable for manual input
-          GestureDetector(
-            onTap: () => _showQuantityInputDialog(index, item),
-            child: Container(
-              width: 50,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: AppThemeColors.background,
-                border: Border.symmetric(
-                  vertical: BorderSide(color: AppThemeColors.border),
-                ),
-              ),
-              child: Text(
-                item.quantityDisplay,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-          // Plus button
-          InkWell(
-            onTap: () => _updateItemQuantity(index, item.quantity + step),
-            borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.add,
-                color: AppThemeColors.primary,
-                size: 18,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OrderItemEntry {
-  final Product product;
-  double quantity = 1;
-  int subtotal;
-
-  _OrderItemEntry({
-    required this.product,
-  }) : subtotal = product.price;
-
-  void updateSubtotal() {
-    subtotal = (product.price * quantity).round();
-  }
-
-  /// Format quantity display based on unit type
-  String get quantityDisplay {
-    // Simple heuristic for decimal display
-    // If rounded matches original, show int.
-    if (quantity == quantity.roundToDouble()) {
-       return quantity.toInt().toString();
-    }
-    return quantity.toStringAsFixed(1);
   }
 }
 
@@ -1352,7 +1037,7 @@ class _CustomerSearchSheetState extends State<_CustomerSearchSheet> {
                 return ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: customers.length,
-                  separatorBuilder: (_, _) => Divider(
+                  separatorBuilder: (_, __) => Divider(
                     height: 1,
                     color: AppThemeColors.border,
                   ),

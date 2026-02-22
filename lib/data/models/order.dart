@@ -222,7 +222,10 @@ class Order extends Equatable {
   bool get isOverdue {
     if (dueDate == null) return false;
     if (status == OrderStatus.done) return false;
-    return DateTime.now().isAfter(dueDate!);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate!.year, dueDate!.month, dueDate!.day);
+    return today.isAfter(due);
   }
 
   // Get available next status transitions (flexible workflow)

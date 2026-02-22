@@ -196,9 +196,16 @@ class OrderCubit extends Cubit<OrderState> {
 
   /// Update order status
   Future<void> updateStatus(int orderId, OrderStatus newStatus) async {
-    emit(const OrderLoading());
-
     try {
+      // Validate: cannot mark as done if not fully paid
+      if (newStatus == OrderStatus.done) {
+        final order = await _orderRepository.getOrderById(orderId);
+        if (order != null && !order.isPaid) {
+          emit(const OrderError('Pesanan harus lunas sebelum diubah ke Selesai'));
+          return;
+        }
+      }
+
       await _orderRepository.updateOrderStatus(orderId, newStatus);
       
       // Cancel reminder if order is done
@@ -207,9 +214,6 @@ class OrderCubit extends Cubit<OrderState> {
       }
 
       emit(const OrderOperationSuccess('Status berhasil diubah'));
-
-      // Reload orders
-      await loadOrders(status: _currentFilter);
     } catch (e) {
       emit(OrderError(e.toString().replaceAll('Exception: ', '')));
     }

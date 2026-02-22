@@ -111,18 +111,71 @@ class PurchaseOrderRepository {
   }
 
   // Update PO Status (e.g., to 'received')
+  // When status becomes 'received', also:
+  //  - Create new master products for items without product_id
+  //  - Update cost (harga modal) and stock for items with product_id
   Future<void> updatePurchaseOrderStatus(int id, String status) async {
     final db = await _databaseHelper.database;
-    await db.update(
-      'purchase_orders',
-      {
-        'status': status,
-        'updated_at': DateTime.now().toIso8601String(),
-        'is_synced': 0, // Mark as unsynced so it uploads again if needed
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    final now = DateTime.now().toIso8601String();
+
+    await db.transaction((txn) async {
+      // 1. Update PO status
+      await txn.update(
+        'purchase_orders',
+        {
+          'status': status,
+          'updated_at': now,
+          'is_synced': 0,
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      // 2. If receiving, process items against master products
+      if (status == 'received') {
+        final items = await txn.query(
+          'purchase_order_items',
+          where: 'purchase_order_id = ?',
+          whereArgs: [id],
+        );
+
+        for (final item in items) {
+          final productId = item['product_id'] as int?;
+          final quantity = item['quantity'] as int;
+          final cost = item['cost'] as int;
+          final itemName = item['item_name'] as String;
+
+          if (productId != null) {
+            // Update existing product: cost + stock
+            await txn.rawUpdate(
+              'UPDATE products SET cost = ?, stock = COALESCE(stock, 0) + ?, updated_at = ? WHERE id = ?',
+              [cost, quantity, now, productId],
+            );
+          } else {
+            // Create new master product
+            final newProductId = await txn.insert('products', {
+              'name': itemName,
+              'price': cost, // Default sell price = cost, user can adjust later
+              'cost': cost,
+              'stock': quantity,
+              'unit': (item['unit'] as String?) ?? 'pcs',
+              'type': 'goods',
+              'is_active': 1,
+              'created_at': now,
+              'updated_at': now,
+            });
+
+            // Link the PO item back to the new product
+            await txn.update(
+              'purchase_order_items',
+              {'product_id': newProductId},
+              where: 'id = ?',
+              whereArgs: [item['id']],
+            );
+          }
+        }
+      }
+    });
   }
 
   // Update entire PO
