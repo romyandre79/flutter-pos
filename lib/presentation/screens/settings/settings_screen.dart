@@ -576,68 +576,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       _settingsCubit.updateStorePhone(value),
                                 ),
                               ),
-                            ],
-                          ),
-
-                          // Plant Info Section (Owner only)
-                          if (user != null && user.role == UserRole.owner)
-                            _buildSection(
-                              title: 'Plant Information',
-                              children: [
-                                _buildSettingTile(
-                                  context: context,
-                                  icon: Icons.business,
-                                  title: 'Plant Name',
-                                  subtitle: plantInfo?.name.isNotEmpty == true
-                                      ? plantInfo!.name
-                                      : '-',
-                                  onTap: () => _showEditDialog(
-                                    title: 'Edit Plant Name',
-                                    currentValue: plantInfo?.name ?? '',
-                                    hint: 'Masukkan nama plant',
-                                    icon: Icons.business,
-                                    onSave: (value) =>
-                                        _settingsCubit.updatePlantName(value),
-                                  ),
-                                ),
-                                _buildDivider(),
-                                _buildSettingTile(
-                                  context: context,
-                                  icon: Icons.location_city,
-                                  title: 'Plant Address',
-                                  subtitle: plantInfo?.address.isNotEmpty == true
-                                      ? plantInfo!.address
-                                      : '-',
-                                  onTap: () => _showEditDialog(
-                                    title: 'Edit Plant Address',
-                                    currentValue: plantInfo?.address ?? '',
-                                    hint: 'Masukkan alamat plant',
-                                    icon: Icons.location_city,
-                                    maxLines: 2,
-                                    onSave: (value) =>
-                                        _settingsCubit.updatePlantAddress(value),
-                                  ),
-                                ),
-                                _buildDivider(),
-                                _buildSettingTile(
+                              _buildDivider(),
+                              _buildSettingTile(
                                   context: context,
                                   icon: Icons.confirmation_number,
-                                  title: 'Plant Code',
+                                  title: 'Kode Toko',
                                   subtitle: plantInfo?.code.isNotEmpty == true
                                       ? plantInfo!.code
                                       : '-',
                                   onTap: () => _showEditDialog(
-                                    title: 'Edit Plant Code',
+                                    title: 'Edit Kode Toko',
                                     currentValue: plantInfo?.code ?? '',
-                                    hint: 'Masukkan kode plant',
+                                    hint: 'Masukkan Kode Toko',
                                     icon: Icons.confirmation_number,
                                     onSave: (value) =>
                                         _settingsCubit.updatePlantCode(value),
                                   ),
                                 ),
-                              ],
-                            ),
+                            ],
+                          ),
 
+                          // Plant Info Section (Owner only)
+                          if (user != null && user.role == UserRole.owner)
                             // Service Management Section
                           _buildSection(
                             title: 'Layanan',
@@ -953,30 +913,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 subtitle: 'Informasi Pembuat',
                                 onTap: () => _showAboutDialog(context),
                               ),
-                            ],
-                          ),
-
-                          // About Section
-                          _buildSection(
-                            title: 'Tentang Aplikasi',
-                            children: [
-                              _buildSettingTile(
-                                context: context,
-                                icon: Icons.info_outline,
-                                title: AppConstants.appName,
-                                subtitle: 'Versi ${AppConstants.appVersion}',
-                                showArrow: false,
-                                onTap: null,
-                              ),
-                              // _buildDivider(),
-                              // _buildSettingTile(
-                              //   context: context,
-                              //   icon: Icons.school,
-                              //   title: '.com',
-                              //   subtitle: 'Belajar Flutter dari NOL hingga PRO',
-                              //   showArrow: false,
-                              //   onTap: null,
-                              // ),
                             ],
                           ),
 

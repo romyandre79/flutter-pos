@@ -1,11 +1,23 @@
 import 'package:flutter_pos/data/database/database_helper.dart';
 import 'package:flutter_pos/data/models/customer.dart';
+import 'package:flutter_pos/core/constants/app_constants.dart';
 
 class CustomerRepository {
   final DatabaseHelper _databaseHelper;
 
   CustomerRepository({DatabaseHelper? databaseHelper})
       : _databaseHelper = databaseHelper ?? DatabaseHelper.instance;
+
+  Future<void> _checkDemoLimit({int additionalCount = 1}) async {
+    if (AppConstants.isDemo) {
+      final db = await _databaseHelper.database;
+      final result = await db.rawQuery('SELECT COUNT(*) as count FROM customers');
+      final count = result.first['count'] as int;
+      if (count + additionalCount > 5) {
+        throw Exception('Anda telah melebihi batas master pelanggan aplikasi demo, silakan beli hubungi Sales Kreatif atau ke 081932701147');
+      }
+    }
+  }
 
   /// Get all customers
   Future<List<Customer>> getAllCustomers() async {
@@ -43,6 +55,7 @@ class CustomerRepository {
 
   /// Create new customer
   Future<Customer> createCustomer(Customer customer) async {
+    await _checkDemoLimit();
     final db = await _databaseHelper.database;
 
     if (customer.name.trim().isEmpty) {
@@ -83,7 +96,7 @@ class CustomerRepository {
     final db = await _databaseHelper.database;
 
     if (customer.id == null) {
-      throw Exception('Customer ID tidak ditemukan');
+      throw Exception('Pelanggan ID tidak ditemukan');
     }
 
     if (customer.name.trim().isEmpty) {
@@ -149,6 +162,8 @@ class CustomerRepository {
       return Customer.fromMap(result.first);
     }
 
+    await _checkDemoLimit();
+
     // Create new customer
     final now = DateTime.now().toIso8601String();
     final id = await db.insert('customers', {
@@ -203,6 +218,8 @@ class CustomerRepository {
       }
       return existing;
     }
+
+    await _checkDemoLimit();
 
     // Create new customer
     final now = DateTime.now().toIso8601String();
@@ -280,6 +297,7 @@ class CustomerRepository {
   }
   /// Add multiple customers (for import)
   Future<void> addCustomers(List<Customer> customers) async {
+    await _checkDemoLimit(additionalCount: customers.length);
     final db = await _databaseHelper.database;
     final batch = db.batch();
     final now = DateTime.now().toIso8601String();

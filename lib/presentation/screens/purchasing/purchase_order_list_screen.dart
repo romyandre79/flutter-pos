@@ -90,7 +90,7 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
 
           if (state is PoLoaded) {
             if (state.purchaseOrders.isEmpty) {
-              return const Center(child: Text('No Pembelians found'));
+              return const Center(child: Text('Tidak ada data Pembelian'));
             }
 
             return ListView.separated(
@@ -124,7 +124,7 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
                                      showDialog(
                                        context: context,
                                        builder: (ctx) => AlertDialog(
-                                         title: const Text('Delete Pembelian?'),
+                                         title: const Text('Hapus Pembelian?'),
                                          content: const Text('Are you sure you want to delete this order?'),
                                          actions: [
                                             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
@@ -133,20 +133,20 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
                                                 Navigator.pop(ctx);
                                                 context.read<PurchaseOrderCubit>().deletePurchaseOrder(po.id!);
                                               },
-                                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
                                             ),
                                          ],
                                        ),
                                      );
                                    },
-                                   child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                   child: const Text('Hapus', style: TextStyle(color: Colors.red)),
                                  ),
                                const SizedBox(width: 8),
                                OutlinedButton(
                                  onPressed: () {
                                     context.read<PurchaseOrderCubit>().updateStatus(po.id!, 'received'); // Simple status update for now
                                  },
-                                 child: const Text('Mark Received'),
+                                 child: const Text('Terima Barang'),
                                ),
                              ],
                            ),

@@ -189,7 +189,7 @@ class _PurchaseOrderCreateScreenState extends State<PurchaseOrderCreateScreen> {
             // Items List
             Expanded(
               child: _items.isEmpty
-                  ? const Center(child: Text('No items added'))
+                  ? const Center(child: Text('Tidak ada item'))
                   : ListView.builder(
                       itemCount: _items.length,
                       itemBuilder: (context, index) {
@@ -225,7 +225,7 @@ class _PurchaseOrderCreateScreenState extends State<PurchaseOrderCreateScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Total Amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       Text(
                         CurrencyFormatter.format(_items.fold(0, (sum, i) => sum + i.subtotal)),
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppThemeColors.primary),

@@ -54,7 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case UserRole.owner:
         return 'Owner';
       case UserRole.kasir:
-        return 'Kasir';
+        return 'Penjualan';
     }
   }
 
@@ -368,7 +368,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Expanded(
               child: _buildQuickActionItem(
                 icon: Icons.point_of_sale,
-                label: 'Kasir',
+                label: 'Penjualan',
                 color: AppThemeColors.primary,
                 onTap: () {
                   if (widget.onSwitchTab != null) {

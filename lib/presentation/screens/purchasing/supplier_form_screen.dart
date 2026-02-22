@@ -81,7 +81,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('Delete Supplier?'),
+                    title: const Text('Hapus Supplier?'),
                     content: const Text('Are you sure you want to delete this supplier? This action cannot be undone.'),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
@@ -90,7 +90,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
                           Navigator.pop(ctx);
                           context.read<SupplierCubit>().deleteSupplier(widget.supplier!.id!);
                         },
-                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                        child: const Text('Hapus', style: TextStyle(color: Colors.red)),
                       ),
                     ],
                   ),

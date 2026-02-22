@@ -338,7 +338,7 @@ class _CustomerSelectorState extends State<_CustomerSelector> {
               controller: textEditingController,
               focusNode: focusNode,
               decoration: InputDecoration(
-                hintText: 'Customer Name / Phone',
+                hintText: 'Pelanggan Name / Phone',
                 prefixIcon: const Icon(Icons.search),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

@@ -17,7 +17,7 @@ extension UserRoleExtension on UserRole {
       case UserRole.owner:
         return 'Owner';
       case UserRole.kasir:
-        return 'Kasir';
+        return 'Penjualan';
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter_pos/data/database/database_helper.dart';
 import 'package:flutter_pos/data/models/purchase_order.dart';
 import 'package:flutter_pos/data/models/purchase_order_item.dart';
 import 'package:flutter_pos/data/models/supplier.dart';
+import 'package:flutter_pos/core/constants/app_constants.dart';
 
 class PurchaseOrderRepository {
   final DatabaseHelper _databaseHelper;
@@ -75,6 +76,14 @@ class PurchaseOrderRepository {
   Future<PurchaseOrder> createPurchaseOrder(PurchaseOrder po) async {
     final db = await _databaseHelper.database;
     
+    if (AppConstants.isDemo) {
+      final result = await db.rawQuery('SELECT COUNT(*) as count FROM purchase_orders');
+      final count = result.first['count'] as int;
+      if (count >= 10) {
+        throw Exception('Anda telah melebihi batas transaksi pembelian aplikasi demo, silakan beli hubungi Sales Kreatif atau ke 081932701147');
+      }
+    }
+
     return await db.transaction((txn) async {
       final poMap = po.toMap();
       poMap.remove('id');

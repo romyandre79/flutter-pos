@@ -11,10 +11,10 @@ class ProductCubit extends Cubit<ProductState> {
   
   List<Product> get products => _products;
 
-  Future<void> loadProducts({ProductType? type, bool activeOnly = true}) async {
+  Future<void> loadProducts({ProductType? type, bool activeOnly = true, String? query}) async {
     emit(ProductLoading());
     try {
-      _products = await _productRepository.getProducts(type: type, activeOnly: activeOnly);
+      _products = await _productRepository.getProducts(type: type, activeOnly: activeOnly, query: query);
       emit(ProductLoaded(_products));
     } catch (e) {
       emit(ProductError('Gagal memuat data: ${e.toString()}'));

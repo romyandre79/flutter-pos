@@ -560,7 +560,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
             _PermissionItem('Dashboard', 'Full access', true),
             _PermissionItem('Penjualan', 'Full CRUD', true),
             _PermissionItem('Services', 'Full CRUD', true),
-            _PermissionItem('Customers', 'Full + Export', true),
+            _PermissionItem('Pelanggan', 'Full + Export', true),
             _PermissionItem('Master Item', 'Full CRUD', true),
             _PermissionItem('Supplier', 'Full CRUD', true),
             _PermissionItem('Reports', 'Full + Export', true),
@@ -571,7 +571,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
             _PermissionItem('Dashboard', 'View only', true),
             _PermissionItem('Penjualan', 'Create, View, Update', true),
             _PermissionItem('Services', 'View only', true),
-            _PermissionItem('Customers', 'View only', true),
+            _PermissionItem('Pelanggan', 'View only', true),
             _PermissionItem('Master Item', 'View only', true),
             _PermissionItem('Supplier', 'View only', true),
           ];

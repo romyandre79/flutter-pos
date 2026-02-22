@@ -190,6 +190,27 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
           // Header
           _buildHeader(),
           
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Cari Nama atau Barcode...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: AppRadius.mdRadius,
+                  borderSide: BorderSide(color: AppThemeColors.border),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              onChanged: (value) {
+                context.read<ProductCubit>().loadProducts(query: value);
+              },
+            ),
+          ),
+
           // Tabs
           Container(
             color: Colors.white,

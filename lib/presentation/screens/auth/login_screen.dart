@@ -156,6 +156,26 @@ class _LoginScreenState extends State<LoginScreen>
                                 color: Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
+                            if (AppConstants.isDemo) ...[
+                              const SizedBox(height: AppSpacing.sm),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.xs,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppThemeColors.error,
+                                  borderRadius: AppRadius.smRadius,
+                                ),
+                                child: Text(
+                                  'MODE DEMO',
+                                  style: AppTypography.labelMedium.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

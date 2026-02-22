@@ -84,7 +84,7 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Icon(isLargeScreen ? Icons.point_of_sale_outlined : Icons.receipt_long_outlined),
               activeIcon: Icon(isLargeScreen ? Icons.point_of_sale : Icons.receipt_long),
-              label: 'Kasir',
+              label: 'Penjualan',
             ),
           );
         }
@@ -248,7 +248,7 @@ class _MainScreenState extends State<MainScreen> {
                   onTap: () {
                     setState(() => _currentIndex = index);
                     // If switching to POS (Kasir) tab, reload products
-                    if (item.label == 'Kasir') {
+                    if (item.label == 'Penjualan') {
                       _posCubit?.loadProducts();
                     }
                   },

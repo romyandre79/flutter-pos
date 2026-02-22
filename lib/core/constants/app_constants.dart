@@ -64,5 +64,5 @@ class AppConstants {
   static const String defaultStorePhone = '-';
   static const String defaultMachineNumber = '01';
 
-
+  static const bool isDemo = true;
 }

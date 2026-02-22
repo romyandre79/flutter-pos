@@ -3,6 +3,7 @@ import 'package:flutter_pos/data/models/order.dart';
 import 'package:flutter_pos/data/models/order_item.dart';
 import 'package:flutter_pos/data/models/payment.dart';
 import 'package:flutter_pos/data/repositories/customer_repository.dart';
+import 'package:flutter_pos/core/constants/app_constants.dart';
 
 class OrderRepository {
   final DatabaseHelper _databaseHelper;
@@ -83,6 +84,14 @@ class OrderRepository {
     Payment? initialPayment,
   }) async {
     final db = await _databaseHelper.database;
+
+    if (AppConstants.isDemo) {
+      final result = await db.rawQuery('SELECT COUNT(*) as count FROM orders');
+      final count = result.first['count'] as int;
+      if (count >= 10) {
+        throw Exception('Anda telah melebihi batas transaksi penjualan aplikasi demo, silakan beli hubungi Sales Kreatif atau ke 081932701147');
+      }
+    }
 
     // Auto-save customer if phone is provided (before transaction)
     int? customerId = order.customerId;

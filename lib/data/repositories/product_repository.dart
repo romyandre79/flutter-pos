@@ -1,5 +1,6 @@
 import 'package:flutter_pos/data/database/database_helper.dart';
 import 'package:flutter_pos/data/models/product.dart';
+import 'package:flutter_pos/core/constants/app_constants.dart';
 
 class ProductRepository {
   final DatabaseHelper _databaseHelper;
@@ -7,7 +8,7 @@ class ProductRepository {
   ProductRepository({DatabaseHelper? databaseHelper})
       : _databaseHelper = databaseHelper ?? DatabaseHelper.instance;
 
-  Future<List<Product>> getProducts({ProductType? type, bool activeOnly = true}) async {
+  Future<List<Product>> getProducts({ProductType? type, bool activeOnly = true, String? query}) async {
     final db = await _databaseHelper.database;
     String whereClause = '';
     List<dynamic> whereArgs = [];
@@ -23,6 +24,16 @@ class ProductRepository {
         whereClause = 'type = ?';
       }
       whereArgs.add(type.value);
+    }
+
+    if (query != null && query.isNotEmpty) {
+      if (whereClause.isNotEmpty) {
+        whereClause += ' AND (name LIKE ? OR barcode = ?)';
+      } else {
+        whereClause = '(name LIKE ? OR barcode = ?)';
+      }
+      whereArgs.add('%$query%');
+      whereArgs.add(query);
     }
 
     final List<Map<String, dynamic>> maps = await db.query(
@@ -65,6 +76,13 @@ class ProductRepository {
 
   Future<int> addProduct(Product product) async {
     final db = await _databaseHelper.database;
+    if (AppConstants.isDemo) {
+      final result = await db.rawQuery('SELECT COUNT(*) as count FROM products');
+      final count = result.first['count'] as int;
+      if (count >= 5) {
+        throw Exception('Anda telah melebihi batas master item aplikasi demo, silakan beli hubungi Sales Kreatif atau ke 081932701147');
+      }
+    }
     return await db.insert('products', product.toMap());
   }
 
