@@ -204,14 +204,12 @@ class _ReportScreenState extends State<ReportScreen> {
                       ),
                     ),
                   ),
-                  BlocBuilder<ReportCubit, ReportState>(
+                    BlocBuilder<ReportCubit, ReportState>(
                     builder: (context, state) {
                       final isLoaded = state is ReportLoaded;
-                      return GestureDetector(
-                        onTap: isLoaded
-                            ? () => context.read<ReportCubit>().exportToExcel()
-                            : null,
-                        child: Container(
+                      return PopupMenuButton<String>(
+                        enabled: isLoaded,
+                        icon: Container(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
@@ -224,6 +222,65 @@ class _ReportScreenState extends State<ReportScreen> {
                             size: 20,
                           ),
                         ),
+                        onSelected: (value) {
+                          if (!isLoaded) return;
+                          switch (value) {
+                            case 'summary':
+                              context.read<ReportCubit>().exportToExcel();
+                              break;
+                            case 'sales_detail':
+                              context.read<ReportCubit>().exportSalesDetail();
+                              break;
+                            case 'purchase_detail':
+                              context.read<ReportCubit>().exportPurchaseDetail();
+                              break;
+                            case 'stock':
+                              context.read<ReportCubit>().exportStockReport();
+                              break;
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'summary',
+                            child: Row(
+                              children: [
+                                Icon(Icons.summarize_outlined, color: AppThemeColors.textPrimary),
+                                SizedBox(width: AppSpacing.sm),
+                                Text('Laporan Ringkasan'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'sales_detail',
+                            child: Row(
+                              children: [
+                                Icon(Icons.shopping_cart_outlined, color: AppThemeColors.textPrimary),
+                                SizedBox(width: AppSpacing.sm),
+                                Text('Detail Penjualan'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'purchase_detail',
+                            child: Row(
+                              children: [
+                                Icon(Icons.inventory_2_outlined, color: AppThemeColors.textPrimary),
+                                SizedBox(width: AppSpacing.sm),
+                                Text('Detail Pembelian'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'stock',
+                            child: Row(
+                              children: [
+                                Icon(Icons.inventory, color: AppThemeColors.textPrimary),
+                                SizedBox(width: AppSpacing.sm),
+                                Text('Laporan Stok'),
+                              ],
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -630,7 +687,7 @@ class _ReportScreenState extends State<ReportScreen> {
             Expanded(
               child: _buildStatCard(
                 icon: Icons.shopping_bag_outlined,
-                label: 'Total Order',
+                label: 'Total Penjualan',
                 value: '${data.totalOrders}',
                 color: AppThemeColors.primary,
               ),

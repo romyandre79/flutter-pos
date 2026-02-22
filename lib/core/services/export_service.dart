@@ -1,32 +1,42 @@
 import 'dart:io';
 import 'package:excel/excel.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter_pos/core/constants/app_constants.dart';
-import 'package:flutter_pos/data/models/order.dart';
-import 'package:flutter_pos/data/models/product.dart';
-import 'package:flutter_pos/data/models/purchase_order.dart';
-import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams, XFile;
+import 'package:flutter_pos/data/models/order.dart';
+import 'package:flutter_pos/data/models/purchase_order.dart';
+import 'package:flutter_pos/data/models/product.dart';
+import 'package:flutter_pos/core/constants/app_constants.dart';
+import 'package:flutter_pos/core/utils/currency_formatter.dart';
+import 'package:flutter_pos/core/utils/date_formatter.dart';
+import 'package:flutter_pos/logic/cubits/report/report_state.dart';
+
 
 class ExportService {
+  /// Save Excel file (Handles both Mobile and Desktop)
   Future<String?> saveExcelFile(Excel excel, String fileName) async {
     final fileBytes = excel.save();
     if (fileBytes == null) return null;
 
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       final outputFile = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Excel File',
+        dialogTitle: 'Simpan File Excel',
         fileName: fileName,
         allowedExtensions: ['xlsx'],
         type: FileType.custom,
       );
 
       if (outputFile != null) {
-        final file = File(outputFile);
+        String path = outputFile;
+        if (!path.endsWith('.xlsx')) {
+          path = '$path.xlsx';
+        }
+
+        final file = File(path);
         await file.writeAsBytes(fileBytes);
-        return outputFile;
+        return path;
       }
+      return null;
     } else {
       final directory = await getApplicationDocumentsDirectory();
       final filePath = '${directory.path}/$fileName';
@@ -34,134 +44,409 @@ class ExportService {
       await file.writeAsBytes(fileBytes);
       return filePath;
     }
-    return null;
   }
 
-  // Templates
+  // Template downloads
   Future<String?> downloadProductTemplate() async {
     final excel = Excel.createExcel();
     final sheet = excel['Template Produk'];
-    
-    List<String> headers = ['Nama Produk', 'Deskripsi', 'Harga Jual', 'Harga Beli', 'Stok', 'Satuan', 'Tipe (Barang/Jasa)', 'Barcode'];
-    for (int i = 0; i < headers.length; i++) {
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
-          ..value = TextCellValue(headers[i])
-          ..cellStyle = CellStyle(bold: true);
-    }
-    
-    // Example Row
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 1)).value = TextCellValue('Contoh Produk');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: 1)).value = TextCellValue('Deskripsi produk');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: 1)).value = IntCellValue(10000);
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: 1)).value = IntCellValue(5000);
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: 1)).value = IntCellValue(100);
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: 1)).value = TextCellValue('pcs');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: 1)).value = TextCellValue('Barang');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: 1)).value = TextCellValue('123456789');
-
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('nama');
+    sheet.cell(CellIndex.indexByString('B1')).value = TextCellValue('harga');
+    sheet.cell(CellIndex.indexByString('C1')).value = TextCellValue('harga_modal');
+    sheet.cell(CellIndex.indexByString('D1')).value = TextCellValue('satuan');
+    sheet.cell(CellIndex.indexByString('E1')).value = TextCellValue('tipe');
+    sheet.cell(CellIndex.indexByString('F1')).value = TextCellValue('stok');
     excel.delete('Sheet1');
-    return await saveExcelFile(excel, 'Template_Import_Produk.xlsx');
+    return saveExcelFile(excel, 'Template_Produk_${AppConstants.appName}.xlsx');
   }
 
   Future<String?> downloadCustomerTemplate() async {
     final excel = Excel.createExcel();
     final sheet = excel['Template Pelanggan'];
-    
-    List<String> headers = ['Nama Pelanggan', 'Nomor HP', 'Alamat', 'Catatan'];
-    for (int i = 0; i < headers.length; i++) {
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
-          ..value = TextCellValue(headers[i])
-          ..cellStyle = CellStyle(bold: true);
-    }
-    
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 1)).value = TextCellValue('Budi Santoso');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: 1)).value = TextCellValue('081234567890');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: 1)).value = TextCellValue('Jl. Merdeka No. 45');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: 1)).value = TextCellValue('Pelanggan VIP');
-
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('nama');
+    sheet.cell(CellIndex.indexByString('B1')).value = TextCellValue('telepon');
+    sheet.cell(CellIndex.indexByString('C1')).value = TextCellValue('alamat');
     excel.delete('Sheet1');
-    return await saveExcelFile(excel, 'Template_Import_Pelanggan.xlsx');
+    return saveExcelFile(excel, 'Template_Pelanggan_${AppConstants.appName}.xlsx');
   }
 
   Future<String?> downloadSupplierTemplate() async {
     final excel = Excel.createExcel();
     final sheet = excel['Template Supplier'];
-    
-    List<String> headers = ['Nama Supplier', 'Contact Person', 'Alamat', 'Telepon', 'Email'];
-    for (int i = 0; i < headers.length; i++) {
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
-          ..value = TextCellValue(headers[i])
-          ..cellStyle = CellStyle(bold: true);
-    }
-    
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 1)).value = TextCellValue('PT. Supplier Maju');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: 1)).value = TextCellValue('Pak Joko');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: 1)).value = TextCellValue('Jl. Industri Blok A');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: 1)).value = TextCellValue('021-5555555');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: 1)).value = TextCellValue('supplier@example.com');
-
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('nama');
+    sheet.cell(CellIndex.indexByString('B1')).value = TextCellValue('telepon');
+    sheet.cell(CellIndex.indexByString('C1')).value = TextCellValue('alamat');
+    sheet.cell(CellIndex.indexByString('D1')).value = TextCellValue('catatan');
     excel.delete('Sheet1');
-    return await saveExcelFile(excel, 'Template_Import_Supplier.xlsx');
+    return saveExcelFile(excel, 'Template_Supplier_${AppConstants.appName}.xlsx');
   }
 
-  // Reports
-  Future<String?> exportOrders(List<Order> orders, DateTime startDate, DateTime endDate) async {
+  /// Export orders to Excel (Summary report)
+  Future<String> exportOrdersToExcel(
+    List<Order> orders,
+    ReportData reportData,
+  ) async {
     final excel = Excel.createExcel();
-    final sheet = excel['Laporan Penjualan'];
 
-    List<String> headers = ['No Invoice', 'Tanggal', 'Pelanggan', 'Status', 'Total Item', 'Total Harga', 'Dibayar', 'Catatan'];
-    for (int i = 0; i < headers.length; i++) {
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
-          ..value = TextCellValue(headers[i])
-          ..cellStyle = CellStyle(bold: true);
+    // Sheet 1: Summary
+    _createSummarySheet(excel, reportData);
+
+    // Sheet 2: Orders
+    _createOrdersSheet(excel, orders);
+
+    // Sheet 3: Service Summary
+    _createServiceSummarySheet(excel, reportData);
+
+    excel.delete('Sheet1');
+
+    final directory = await getApplicationDocumentsDirectory();
+    final fileName =
+        'Laporan_${DateFormatter.formatDateCompact(reportData.startDate)}_${DateFormatter.formatDateCompact(reportData.endDate)}.xlsx';
+    final filePath = '${directory.path}/$fileName';
+
+    final fileBytes = excel.save();
+    if (fileBytes != null) {
+      final file = File(filePath);
+      await file.writeAsBytes(fileBytes);
+      return filePath;
     }
 
-    for (int i = 0; i < orders.length; i++) {
-        final order = orders[i];
-        final row = i + 1;
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(order.invoiceNo);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(DateFormat(AppConstants.dateTimeFormat).format(order.orderDate));
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(order.customerName);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(order.statusDisplay);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = IntCellValue(order.totalItems);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = IntCellValue(order.totalPrice);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = IntCellValue(order.paid);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row)).value = TextCellValue(order.notes ?? '-');
+    throw Exception('Gagal membuat file Excel');
+  }
+
+  void _createSummarySheet(Excel excel, ReportData reportData) {
+    final sheet = excel['Ringkasan'];
+
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('LAPORAN TRANSAKSI');
+    sheet.cell(CellIndex.indexByString('A2')).value = TextCellValue(
+        'Periode: ${DateFormatter.formatDate(reportData.startDate)} - ${DateFormatter.formatDate(reportData.endDate)}');
+
+    sheet.cell(CellIndex.indexByString('A4')).value = TextCellValue('Ringkasan');
+
+    sheet.cell(CellIndex.indexByString('A6')).value = TextCellValue('Total Penjualan');
+    sheet.cell(CellIndex.indexByString('B6')).value = IntCellValue(reportData.totalOrders);
+
+    sheet.cell(CellIndex.indexByString('A7')).value = TextCellValue('Penjualan Selesai');
+    sheet.cell(CellIndex.indexByString('B7')).value = IntCellValue(reportData.completedOrders);
+
+    sheet.cell(CellIndex.indexByString('A8')).value = TextCellValue('Penjualan Pending');
+    sheet.cell(CellIndex.indexByString('B8')).value = IntCellValue(reportData.pendingOrders);
+
+    sheet.cell(CellIndex.indexByString('A10')).value = TextCellValue('Total Omzet');
+    sheet.cell(CellIndex.indexByString('B10')).value =
+        TextCellValue(CurrencyFormatter.format(reportData.totalRevenue));
+
+    sheet.cell(CellIndex.indexByString('A11')).value = TextCellValue('Total Dibayar');
+    sheet.cell(CellIndex.indexByString('B11')).value =
+        TextCellValue(CurrencyFormatter.format(reportData.totalPaid));
+
+    sheet.cell(CellIndex.indexByString('A12')).value = TextCellValue('Total Belum Dibayar');
+    sheet.cell(CellIndex.indexByString('B12')).value =
+        TextCellValue(CurrencyFormatter.format(reportData.totalUnpaid));
+        
+    sheet.cell(CellIndex.indexByString('A13')).value = TextCellValue('Total Pembelian');
+    sheet.cell(CellIndex.indexByString('B13')).value =
+        TextCellValue(CurrencyFormatter.format(reportData.totalPurchases));
+
+    sheet.cell(CellIndex.indexByString('A14')).value = TextCellValue('Total Laba Bersih');
+    sheet.cell(CellIndex.indexByString('B14')).value =
+        TextCellValue(CurrencyFormatter.format(reportData.totalProfit));
+
+    sheet.cell(CellIndex.indexByString('A16')).value = TextCellValue('Laporan Harian');
+
+    sheet.cell(CellIndex.indexByString('A17')).value = TextCellValue('Tanggal');
+    sheet.cell(CellIndex.indexByString('B17')).value = TextCellValue('Jumlah Penjualan');
+    sheet.cell(CellIndex.indexByString('C17')).value = TextCellValue('Omzet');
+    sheet.cell(CellIndex.indexByString('D17')).value = TextCellValue('Dibayar');
+    sheet.cell(CellIndex.indexByString('E17')).value = TextCellValue('Pembelian');
+    sheet.cell(CellIndex.indexByString('F17')).value = TextCellValue('Laba');
+
+    int row = 18;
+    for (final daily in reportData.dailyRevenue) {
+      sheet.cell(CellIndex.indexByString('A$row')).value =
+          TextCellValue(DateFormatter.formatDate(daily.date));
+      sheet.cell(CellIndex.indexByString('B$row')).value = IntCellValue(daily.orderCount);
+      sheet.cell(CellIndex.indexByString('C$row')).value =
+          TextCellValue(CurrencyFormatter.format(daily.revenue));
+      sheet.cell(CellIndex.indexByString('D$row')).value =
+          TextCellValue(CurrencyFormatter.format(daily.paid));
+      sheet.cell(CellIndex.indexByString('E$row')).value =
+          TextCellValue(CurrencyFormatter.format(daily.purchases));
+      sheet.cell(CellIndex.indexByString('F$row')).value =
+          TextCellValue(CurrencyFormatter.format(daily.profit));
+      row++;
+    }
+  }
+
+  void _createOrdersSheet(Excel excel, List<Order> orders) {
+    final sheet = excel['Daftar Penjualan'];
+
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('No Invoice');
+    sheet.cell(CellIndex.indexByString('B1')).value = TextCellValue('Tanggal');
+    sheet.cell(CellIndex.indexByString('C1')).value = TextCellValue('Pelanggan');
+    sheet.cell(CellIndex.indexByString('D1')).value = TextCellValue('No HP');
+    sheet.cell(CellIndex.indexByString('E1')).value = TextCellValue('Status');
+    sheet.cell(CellIndex.indexByString('F1')).value = TextCellValue('Total');
+    sheet.cell(CellIndex.indexByString('G1')).value = TextCellValue('Dibayar');
+    sheet.cell(CellIndex.indexByString('H1')).value = TextCellValue('Kurang');
+
+    int row = 2;
+    for (final order in orders) {
+      sheet.cell(CellIndex.indexByString('A$row')).value = TextCellValue(order.invoiceNo);
+      sheet.cell(CellIndex.indexByString('B$row')).value =
+          TextCellValue(DateFormatter.formatDateTime(order.orderDate));
+      sheet.cell(CellIndex.indexByString('C$row')).value = TextCellValue(order.customerName);
+      sheet.cell(CellIndex.indexByString('D$row')).value =
+          TextCellValue(order.customerPhone ?? '-');
+      sheet.cell(CellIndex.indexByString('E$row')).value =
+          TextCellValue(order.status.displayName);
+      sheet.cell(CellIndex.indexByString('F$row')).value =
+          TextCellValue(CurrencyFormatter.format(order.totalPrice));
+      sheet.cell(CellIndex.indexByString('G$row')).value =
+          TextCellValue(CurrencyFormatter.format(order.paid));
+      sheet.cell(CellIndex.indexByString('H$row')).value =
+          TextCellValue(CurrencyFormatter.format(order.remainingPayment));
+      row++;
+    }
+  }
+
+  void _createServiceSummarySheet(Excel excel, ReportData reportData) {
+    final sheet = excel['Layanan Populer'];
+
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('Nama Layanan');
+    sheet.cell(CellIndex.indexByString('B1')).value = TextCellValue('Jumlah Penjualan');
+    sheet.cell(CellIndex.indexByString('C1')).value = TextCellValue('Total Qty');
+    sheet.cell(CellIndex.indexByString('D1')).value = TextCellValue('Total Pendapatan');
+
+    int row = 2;
+    for (final service in reportData.topServices) {
+      sheet.cell(CellIndex.indexByString('A$row')).value = TextCellValue(service.serviceName);
+      sheet.cell(CellIndex.indexByString('B$row')).value = IntCellValue(service.orderCount);
+      sheet.cell(CellIndex.indexByString('C$row')).value = IntCellValue(service.totalQuantity);
+      sheet.cell(CellIndex.indexByString('D$row')).value =
+          TextCellValue(CurrencyFormatter.format(service.totalRevenue));
+      row++;
+    }
+  }
+
+  /// Share exported file
+  Future<void> shareFile(String filePath) async {
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(filePath)], text: 'Laporan Transaksi'),
+    );
+  }
+
+  /// Export Sales Detail to Excel
+  Future<String> exportSalesDetailToExcel(
+    List<Order> orders,
+    ReportData reportData,
+  ) async {
+    final excel = Excel.createExcel();
+    final sheet = excel['Detail Penjualan'];
+
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('No Invoice');
+    sheet.cell(CellIndex.indexByString('B1')).value = TextCellValue('Tanggal');
+    sheet.cell(CellIndex.indexByString('C1')).value = TextCellValue('Pelanggan');
+    sheet.cell(CellIndex.indexByString('D1')).value = TextCellValue('Item');
+    sheet.cell(CellIndex.indexByString('E1')).value = TextCellValue('Qty');
+    sheet.cell(CellIndex.indexByString('F1')).value = TextCellValue('Satuan');
+    sheet.cell(CellIndex.indexByString('G1')).value = TextCellValue('Harga Satuan');
+    sheet.cell(CellIndex.indexByString('H1')).value = TextCellValue('Subtotal');
+    sheet.cell(CellIndex.indexByString('I1')).value = TextCellValue('Total Transaksi');
+
+    int row = 2;
+    for (final order in orders) {
+      if (order.items == null || order.items!.isEmpty) {
+        sheet.cell(CellIndex.indexByString('A$row')).value = TextCellValue(order.invoiceNo);
+        sheet.cell(CellIndex.indexByString('B$row')).value =
+            TextCellValue(DateFormatter.formatDateTime(order.orderDate));
+        sheet.cell(CellIndex.indexByString('C$row')).value = TextCellValue(order.customerName);
+        sheet.cell(CellIndex.indexByString('I$row')).value =
+            TextCellValue(CurrencyFormatter.format(order.totalPrice));
+        row++;
+      } else {
+        bool firstItem = true;
+        for (final item in order.items!) {
+          sheet.cell(CellIndex.indexByString('A$row')).value = TextCellValue(order.invoiceNo);
+          sheet.cell(CellIndex.indexByString('B$row')).value =
+              TextCellValue(DateFormatter.formatDateTime(order.orderDate));
+          sheet.cell(CellIndex.indexByString('C$row')).value = TextCellValue(order.customerName);
+          
+          sheet.cell(CellIndex.indexByString('D$row')).value = TextCellValue(item.serviceName);
+          sheet.cell(CellIndex.indexByString('E$row')).value = DoubleCellValue(item.quantity.toDouble());
+          sheet.cell(CellIndex.indexByString('F$row')).value = TextCellValue(item.unit);
+          sheet.cell(CellIndex.indexByString('G$row')).value =
+              TextCellValue(CurrencyFormatter.format(item.pricePerUnit));
+          sheet.cell(CellIndex.indexByString('H$row')).value =
+              TextCellValue(CurrencyFormatter.format(item.subtotal));
+          
+          if (firstItem) {
+             sheet.cell(CellIndex.indexByString('I$row')).value =
+                TextCellValue(CurrencyFormatter.format(order.totalPrice));
+             firstItem = false;
+          }
+          row++;
+        }
+      }
     }
 
     excel.delete('Sheet1');
-    final fileName = 'Laporan_Penjualan_${DateFormat('yyyyMMdd').format(startDate)}-${DateFormat('yyyyMMdd').format(endDate)}.xlsx';
-    return await saveExcelFile(excel, fileName);
+
+    final directory = await getApplicationDocumentsDirectory();
+    final fileName =
+        'Laporan_Penjualan_Detail_${DateFormatter.formatDateCompact(reportData.startDate)}_${DateFormatter.formatDateCompact(reportData.endDate)}.xlsx';
+    final filePath = '${directory.path}/$fileName';
+
+    final fileBytes = excel.save();
+    if (fileBytes != null) {
+      final file = File(filePath);
+      await file.writeAsBytes(fileBytes);
+      return filePath;
+    }
+
+    throw Exception('Gagal membuat file Excel Detail Penjualan');
   }
 
-  Future<String?> exportStock(List<Product> products) async {
-     final excel = Excel.createExcel();
-     final sheet = excel['Laporan Stok'];
+  /// Export Purchase Detail to Excel
+  Future<String> exportPurchaseDetailToExcel(
+    List<PurchaseOrder> purchases,
+    ReportData reportData,
+  ) async {
+    final excel = Excel.createExcel();
+    final sheet = excel['Detail Pembelian'];
 
-     List<String> headers = ['Nama Produk', 'Kategori', 'Stok', 'Satuan', 'Harga Beli', 'Harga Jual', 'Nilai Aset'];
-     for (int i = 0; i < headers.length; i++) {
-       sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
-           ..value = TextCellValue(headers[i])
-           ..cellStyle = CellStyle(bold: true);
-     }
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('Supplier');
+    sheet.cell(CellIndex.indexByString('B1')).value = TextCellValue('Tanggal');
+    sheet.cell(CellIndex.indexByString('C1')).value = TextCellValue('Status');
+    sheet.cell(CellIndex.indexByString('D1')).value = TextCellValue('Item');
+    sheet.cell(CellIndex.indexByString('E1')).value = TextCellValue('Qty');
+    sheet.cell(CellIndex.indexByString('F1')).value = TextCellValue('Satuan');
+    sheet.cell(CellIndex.indexByString('G1')).value = TextCellValue('Harga Satuan');
+    sheet.cell(CellIndex.indexByString('H1')).value = TextCellValue('Subtotal');
+    sheet.cell(CellIndex.indexByString('I1')).value = TextCellValue('Total Transaksi');
 
-     for (int i = 0; i < products.length; i++) {
-       final product = products[i];
-       final row = i + 1;
-       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(product.name);
-       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(product.isService ? 'Jasa' : 'Barang');
-       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = IntCellValue(product.stock ?? 0);
-       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(product.unit);
-       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = IntCellValue(product.cost);
-       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = IntCellValue(product.price);
-       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = IntCellValue(product.cost * (product.stock ?? 0));
-     }
+    int row = 2;
+    for (final purchase in purchases) {
+      final supplierName = purchase.supplier?.name ?? 'Unknown Supplier';
+      
+      if (purchase.items.isEmpty) {
+        sheet.cell(CellIndex.indexByString('A$row')).value = TextCellValue(supplierName);
+        sheet.cell(CellIndex.indexByString('B$row')).value =
+            TextCellValue(DateFormatter.formatDate(purchase.orderDate));
+        sheet.cell(CellIndex.indexByString('C$row')).value = TextCellValue(purchase.statusDisplay);
+        sheet.cell(CellIndex.indexByString('I$row')).value =
+            TextCellValue(CurrencyFormatter.format(purchase.totalAmount));
+        row++;
+      } else {
+        bool firstItem = true;
+        for (final item in purchase.items) {
+          sheet.cell(CellIndex.indexByString('A$row')).value = TextCellValue(supplierName);
+          sheet.cell(CellIndex.indexByString('B$row')).value =
+              TextCellValue(DateFormatter.formatDate(purchase.orderDate));
+          sheet.cell(CellIndex.indexByString('C$row')).value = TextCellValue(purchase.statusDisplay);
+          
+          sheet.cell(CellIndex.indexByString('D$row')).value = TextCellValue(item.itemName);
+          sheet.cell(CellIndex.indexByString('E$row')).value = IntCellValue(item.quantity);
+          sheet.cell(CellIndex.indexByString('F$row')).value = TextCellValue('-');
+          sheet.cell(CellIndex.indexByString('G$row')).value =
+              TextCellValue(CurrencyFormatter.format(item.cost));
+          sheet.cell(CellIndex.indexByString('H$row')).value =
+              TextCellValue(CurrencyFormatter.format(item.subtotal));
+          
+          if (firstItem) {
+             sheet.cell(CellIndex.indexByString('I$row')).value =
+                TextCellValue(CurrencyFormatter.format(purchase.totalAmount));
+             firstItem = false;
+          }
+          row++;
+        }
+      }
+    }
 
-     excel.delete('Sheet1');
-     final fileName = 'Laporan_Stok_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.xlsx';
-     return await saveExcelFile(excel, fileName);
+    excel.delete('Sheet1');
+
+    final directory = await getApplicationDocumentsDirectory();
+    final fileName =
+        'Laporan_Pembelian_Detail_${DateFormatter.formatDateCompact(reportData.startDate)}_${DateFormatter.formatDateCompact(reportData.endDate)}.xlsx';
+    final filePath = '${directory.path}/$fileName';
+
+    final fileBytes = excel.save();
+    if (fileBytes != null) {
+      final file = File(filePath);
+      await file.writeAsBytes(fileBytes);
+      return filePath;
+    }
+
+    throw Exception('Gagal membuat file Excel Detail Pembelian');
   }
-  Future<void> shareFile(String filePath) async {
-    await Share.shareXFiles([XFile(filePath)], text: 'Exported File');
+
+  /// Export Stock Report to Excel
+  Future<String> exportStockReportToExcel(
+    List<Product> products,
+  ) async {
+    final excel = Excel.createExcel();
+    final sheet = excel['Stok Produk'];
+
+    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('Nama Produk');
+    sheet.cell(CellIndex.indexByString('B1')).value = TextCellValue('Kategori');
+    sheet.cell(CellIndex.indexByString('C1')).value = TextCellValue('Stok');
+    sheet.cell(CellIndex.indexByString('D1')).value = TextCellValue('Satuan');
+    sheet.cell(CellIndex.indexByString('E1')).value = TextCellValue('Harga Modal');
+    sheet.cell(CellIndex.indexByString('F1')).value = TextCellValue('Harga Jual');
+    sheet.cell(CellIndex.indexByString('G1')).value = TextCellValue('Nilai Aset (Modal)');
+    sheet.cell(CellIndex.indexByString('H1')).value = TextCellValue('Nilai Jual');
+
+    int row = 2;
+    int totalAssetValue = 0;
+    int totalSalesValue = 0;
+
+    for (final product in products) {
+      final stock = product.stock ?? 0;
+      final assetValue = (stock * product.cost).round();
+      final salesValue = (stock * product.price).round();
+
+      totalAssetValue += assetValue;
+      totalSalesValue += salesValue;
+
+      sheet.cell(CellIndex.indexByString('A$row')).value = TextCellValue(product.name);
+      sheet.cell(CellIndex.indexByString('B$row')).value = TextCellValue(product.type.displayName);
+      sheet.cell(CellIndex.indexByString('C$row')).value = IntCellValue(stock);
+      sheet.cell(CellIndex.indexByString('D$row')).value = TextCellValue(product.unit);
+      
+      sheet.cell(CellIndex.indexByString('E$row')).value =
+          TextCellValue(CurrencyFormatter.format(product.cost));
+      sheet.cell(CellIndex.indexByString('F$row')).value =
+          TextCellValue(CurrencyFormatter.format(product.price));
+      
+      sheet.cell(CellIndex.indexByString('G$row')).value =
+          TextCellValue(CurrencyFormatter.format(assetValue));
+      sheet.cell(CellIndex.indexByString('H$row')).value =
+          TextCellValue(CurrencyFormatter.format(salesValue));
+      
+      row++;
+    }
+
+    row++;
+    sheet.cell(CellIndex.indexByString('A$row')).value = TextCellValue('TOTAL');
+    sheet.cell(CellIndex.indexByString('G$row')).value =
+        TextCellValue(CurrencyFormatter.format(totalAssetValue));
+    sheet.cell(CellIndex.indexByString('H$row')).value =
+        TextCellValue(CurrencyFormatter.format(totalSalesValue));
+
+    excel.delete('Sheet1');
+
+    final directory = await getApplicationDocumentsDirectory();
+    final fileName =
+        'Laporan_Stok_${DateFormatter.formatDateCompact(DateTime.now())}.xlsx';
+    final filePath = '${directory.path}/$fileName';
+
+    final fileBytes = excel.save();
+    if (fileBytes != null) {
+      final file = File(filePath);
+      await file.writeAsBytes(fileBytes);
+      return filePath;
+    }
+
+    throw Exception('Gagal membuat file Excel Laporan Stok');
   }
 }

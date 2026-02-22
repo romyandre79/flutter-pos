@@ -1,5 +1,10 @@
 import 'package:flutter_pos/data/database/database_helper.dart';
 import 'package:flutter_pos/data/models/order.dart';
+import 'package:flutter_pos/data/models/order_item.dart';
+import 'package:flutter_pos/data/models/purchase_order.dart';
+import 'package:flutter_pos/data/models/purchase_order_item.dart';
+import 'package:flutter_pos/data/models/supplier.dart';
+import 'package:flutter_pos/data/models/product.dart';
 import 'package:flutter_pos/logic/cubits/report/report_state.dart';
 
 class ReportRepository {
@@ -15,7 +20,6 @@ class ReportRepository {
   ) async {
     final db = await _databaseHelper.database;
 
-    // Set start to beginning of day and end to end of day
     final start = DateTime(startDate.year, startDate.month, startDate.day);
     final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
 
@@ -39,7 +43,6 @@ class ReportRepository {
     final start = DateTime(startDate.year, startDate.month, startDate.day);
     final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
 
-    // Get total orders and revenue (based on order_date)
     final summaryResult = await db.rawQuery('''
       SELECT
         COUNT(*) as total_orders,
@@ -52,7 +55,6 @@ class ReportRepository {
     final totalOrders = (summary['total_orders'] as int?) ?? 0;
     final totalRevenue = (summary['total_revenue'] as int?) ?? 0;
 
-    // Get total paid (based on payment_date from payments table)
     final paidResult = await db.rawQuery('''
       SELECT
         SUM(amount - COALESCE(change, 0)) as total_paid
@@ -62,7 +64,6 @@ class ReportRepository {
 
     final totalPaid = (paidResult.first['total_paid'] as int?) ?? 0;
 
-    // Get orders by status
     final statusResult = await db.rawQuery('''
       SELECT status, COUNT(*) as count
       FROM orders
@@ -86,7 +87,6 @@ class ReportRepository {
       }
     }
 
-    // Get daily revenue (orders by order_date)
     final dailyOrderResult = await db.rawQuery('''
       SELECT
         DATE(order_date) as date,
@@ -98,7 +98,6 @@ class ReportRepository {
       ORDER BY date ASC
     ''', [start.toIso8601String(), end.toIso8601String()]);
 
-    // Get daily payments (payments by payment_date)
     final dailyPaymentResult = await db.rawQuery('''
       SELECT
         DATE(payment_date) as date,
@@ -108,7 +107,6 @@ class ReportRepository {
       GROUP BY DATE(payment_date)
     ''', [start.toIso8601String(), end.toIso8601String()]);
 
-    // Get total purchases
     final purchaseResult = await db.rawQuery('''
       SELECT SUM(total_amount) as total_purchases
       FROM purchase_orders
@@ -117,7 +115,6 @@ class ReportRepository {
     
     final totalPurchases = (purchaseResult.first['total_purchases'] as int?) ?? 0;
 
-    // Get daily purchases
     final dailyPurchaseResult = await db.rawQuery('''
       SELECT 
         DATE(order_date) as date,
@@ -127,7 +124,6 @@ class ReportRepository {
       GROUP BY DATE(order_date)
     ''', [start.toIso8601String(), end.toIso8601String()]);
 
-    // Create maps for quick lookup
     final dailyPayments = <String, int>{};
     for (final row in dailyPaymentResult) {
       final date = row['date'] as String;
@@ -140,8 +136,6 @@ class ReportRepository {
       dailyPurchases[date] = (row['purchases'] as int?) ?? 0;
     }
 
-    // Combine orders, payments, and purchases data
-    // Start with dates from orders
     final dailyDataMap = <String, DailyRevenue>{};
 
     for (final row in dailyOrderResult) {
@@ -157,7 +151,6 @@ class ReportRepository {
       );
     }
 
-    // Add days that have payments but no orders
     for (final entry in dailyPayments.entries) {
       if (!dailyDataMap.containsKey(entry.key)) {
         dailyDataMap[entry.key] = DailyRevenue(
@@ -171,7 +164,6 @@ class ReportRepository {
       }
     }
 
-    // Add days that have purchases but no orders or payments
     for (final entry in dailyPurchases.entries) {
       if (!dailyDataMap.containsKey(entry.key)) {
         dailyDataMap[entry.key] = DailyRevenue(
@@ -186,11 +178,8 @@ class ReportRepository {
     }
 
     final dailyRevenue = dailyDataMap.values.toList();
-
-    // Sort by date
     dailyRevenue.sort((a, b) => a.date.compareTo(b.date));
 
-    // Get top services
     final serviceResult = await db.rawQuery('''
       SELECT
         oi.service_name,
@@ -229,5 +218,91 @@ class ReportRepository {
       dailyRevenue: dailyRevenue,
       topServices: topServices,
     );
+  }
+
+  /// Get orders with items for export
+  Future<List<Order>> getOrdersWithItemsByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final db = await _databaseHelper.database;
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+
+    final orderMaps = await db.query(
+      'orders',
+      where: 'order_date BETWEEN ? AND ?',
+      whereArgs: [start.toIso8601String(), end.toIso8601String()],
+      orderBy: 'order_date DESC',
+    );
+
+    final orders = <Order>[];
+
+    for (final map in orderMaps) {
+      final order = Order.fromMap(map);
+      
+      final itemMaps = await db.query(
+        'order_items',
+        where: 'order_id = ?',
+        whereArgs: [order.id],
+      );
+
+      final items = itemMaps.map((m) => OrderItem.fromMap(m)).toList();
+      orders.add(order.copyWith(items: items));
+    }
+
+    return orders;
+  }
+
+  /// Get purchase orders with items for export
+  Future<List<PurchaseOrder>> getPurchasesWithItemsByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final db = await _databaseHelper.database;
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+
+    final purchaseMaps = await db.query(
+      'purchase_orders',
+      where: 'order_date BETWEEN ? AND ? AND status != ?',
+      whereArgs: [start.toIso8601String(), end.toIso8601String(), 'cancelled'],
+      orderBy: 'order_date DESC',
+    );
+
+    final purchases = <PurchaseOrder>[];
+
+    for (final map in purchaseMaps) {
+      var purchase = PurchaseOrder.fromMap(map);
+      
+      final supplierMaps = await db.query(
+        'suppliers',
+        where: 'id = ?',
+        whereArgs: [purchase.supplierId],
+      );
+      
+      if (supplierMaps.isNotEmpty) {
+        final supplier = Supplier.fromMap(supplierMaps.first);
+        purchase = purchase.copyWith(supplier: supplier);
+      }
+
+      final itemMaps = await db.query(
+        'purchase_order_items',
+        where: 'purchase_order_id = ?',
+        whereArgs: [purchase.id],
+      );
+
+      final items = itemMaps.map((m) => PurchaseOrderItem.fromMap(m)).toList();
+      purchases.add(purchase.copyWith(items: items));
+    }
+
+    return purchases;
+  }
+
+  /// Get all products for stock report
+  Future<List<Product>> getAllProducts() async {
+    final db = await _databaseHelper.database;
+    final maps = await db.query('products', orderBy: 'name ASC');
+    return maps.map((m) => Product.fromMap(m)).toList();
   }
 }

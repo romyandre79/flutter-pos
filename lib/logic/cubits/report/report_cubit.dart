@@ -29,7 +29,7 @@ class ReportCubit extends Cubit<ReportState> {
     }
   }
 
-  /// Export report to Excel
+  /// Export report to Excel (Summary)
   Future<void> exportToExcel() async {
     final currentState = state;
     if (currentState is! ReportLoaded) return;
@@ -37,17 +37,11 @@ class ReportCubit extends Cubit<ReportState> {
     emit(const ReportExporting());
 
     try {
-      final filePath = await _exportService.exportOrders(
+      final filePath = await _exportService.exportOrdersToExcel(
         currentState.orders,
-        currentState.data.startDate,
-        currentState.data.endDate,
+        currentState.data,
       );
-      
-      if (filePath == null) {
-          throw Exception('Gagal membuat file excel');
-      }
 
-      // Share the file
       await _exportService.shareFile(filePath);
 
       emit(ReportExported(
@@ -55,8 +49,100 @@ class ReportCubit extends Cubit<ReportState> {
         message: 'Laporan berhasil di-export',
       ));
 
-      // Restore previous state
       emit(currentState);
+    } catch (e) {
+      emit(ReportError(e.toString().replaceAll('Exception: ', '')));
+      emit(currentState);
+    }
+  }
+
+  /// Export Sales Detail
+  Future<void> exportSalesDetail() async {
+    final currentState = state;
+    if (currentState is! ReportLoaded) return;
+
+    emit(const ReportExporting());
+
+    try {
+      final orders = await _reportRepository.getOrdersWithItemsByDateRange(
+        currentState.data.startDate,
+        currentState.data.endDate,
+      );
+
+      final filePath = await _exportService.exportSalesDetailToExcel(
+        orders,
+        currentState.data,
+      );
+
+      await _exportService.shareFile(filePath);
+
+      emit(ReportExported(
+        filePath: filePath,
+        message: 'Laporan Penjualan (Detail) berhasil di-export',
+      ));
+
+      emit(currentState);
+    } catch (e) {
+      emit(ReportError(e.toString().replaceAll('Exception: ', '')));
+      emit(currentState);
+    }
+  }
+
+  /// Export Purchase Detail
+  Future<void> exportPurchaseDetail() async {
+    final currentState = state;
+    if (currentState is! ReportLoaded) return;
+
+    emit(const ReportExporting());
+
+    try {
+      final purchases = await _reportRepository.getPurchasesWithItemsByDateRange(
+        currentState.data.startDate,
+        currentState.data.endDate,
+      );
+
+      final filePath = await _exportService.exportPurchaseDetailToExcel(
+        purchases,
+        currentState.data,
+      );
+
+      await _exportService.shareFile(filePath);
+
+      emit(ReportExported(
+        filePath: filePath,
+        message: 'Laporan Pembelian (Detail) berhasil di-export',
+      ));
+
+      emit(currentState);
+    } catch (e) {
+      emit(ReportError(e.toString().replaceAll('Exception: ', '')));
+      emit(currentState);
+    }
+  }
+
+  /// Export Stock Report
+  Future<void> exportStockReport() async {
+    final currentState = state;
+
+    emit(const ReportExporting());
+
+    try {
+      final products = await _reportRepository.getAllProducts();
+
+      final filePath = await _exportService.exportStockReportToExcel(products);
+
+      await _exportService.shareFile(filePath);
+
+      emit(ReportExported(
+        filePath: filePath,
+        message: 'Laporan Stok berhasil di-export',
+      ));
+
+      if (currentState is ReportLoaded) {
+        emit(currentState);
+      } else {
+        emit(currentState);
+      }
     } catch (e) {
       emit(ReportError(e.toString().replaceAll('Exception: ', '')));
       emit(currentState);
