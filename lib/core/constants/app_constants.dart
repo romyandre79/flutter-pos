@@ -8,7 +8,7 @@ class AppConstants {
 
   // Database
   static const String databaseName = 'pos.db';
-  static const int databaseVersion = 7;
+  static const int databaseVersion = 9;
 
   // Invoice
   static const String defaultInvoicePrefix = 'POS';

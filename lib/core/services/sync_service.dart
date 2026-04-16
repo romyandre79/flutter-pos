@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:flutter_pos/core/api/api_service.dart';
-import 'package:flutter_pos/data/database/database_helper.dart';
-import 'package:flutter_pos/data/models/customer.dart';
-import 'package:flutter_pos/data/models/order.dart';
-import 'package:flutter_pos/data/models/order_item.dart';
-import 'package:flutter_pos/data/models/product.dart';
-import 'package:flutter_pos/data/models/supplier.dart';
+import 'package:kreatif_pos/core/api/api_service.dart';
+import 'package:kreatif_pos/data/database/database_helper.dart';
+import 'package:kreatif_pos/data/models/customer.dart';
+import 'package:kreatif_pos/data/models/order.dart';
+import 'package:kreatif_pos/data/models/order_item.dart';
+import 'package:kreatif_pos/data/models/product.dart';
+import 'package:kreatif_pos/data/models/supplier.dart';
 
 
-import 'package:flutter_pos/core/services/session_service.dart';
+import 'package:kreatif_pos/core/services/session_service.dart';
 
 class SyncService {
   final ApiService _apiService;

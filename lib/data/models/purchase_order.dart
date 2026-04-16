@@ -1,5 +1,5 @@
-import 'package:flutter_pos/data/models/purchase_order_item.dart';
-import 'package:flutter_pos/data/models/supplier.dart';
+import 'package:kreatif_pos/data/models/purchase_order_item.dart';
+import 'package:kreatif_pos/data/models/supplier.dart';
 
 class PurchaseOrder {
   final int? id;

@@ -1,5 +1,5 @@
-import 'package:flutter_pos/data/database/database_helper.dart';
-import 'package:flutter_pos/data/models/payment.dart';
+import 'package:kreatif_pos/data/database/database_helper.dart';
+import 'package:kreatif_pos/data/models/payment.dart';
 
 class PaymentRepository {
   final DatabaseHelper _databaseHelper;

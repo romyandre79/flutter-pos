@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter_pos/data/models/unit.dart';
-import 'package:flutter_pos/data/repositories/unit_repository.dart';
+import 'package:kreatif_pos/data/models/unit.dart';
+import 'package:kreatif_pos/data/repositories/unit_repository.dart';
 
 // States
 abstract class UnitState extends Equatable {

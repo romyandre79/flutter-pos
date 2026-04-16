@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:flutter_pos/core/theme/app_theme.dart';
+import 'package:kreatif_pos/core/theme/app_theme.dart';
 
 class SimpleBarcodeScanner extends StatefulWidget {
   const SimpleBarcodeScanner({super.key});

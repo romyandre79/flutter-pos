@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_pos/core/theme/app_theme.dart';
-import 'package:flutter_pos/core/utils/currency_formatter.dart';
-import 'package:flutter_pos/core/utils/date_formatter.dart'; // Import DateFormatter
-import 'package:flutter_pos/core/utils/thousand_separator_formatter.dart';
-import 'package:flutter_pos/data/models/order.dart';
-import 'package:flutter_pos/data/models/payment.dart';
+import 'package:kreatif_pos/core/theme/app_theme.dart';
+import 'package:kreatif_pos/core/utils/currency_formatter.dart';
+import 'package:kreatif_pos/core/utils/date_formatter.dart'; // Import DateFormatter
+import 'package:kreatif_pos/core/utils/thousand_separator_formatter.dart';
+import 'package:kreatif_pos/data/models/order.dart';
+import 'package:kreatif_pos/data/models/payment.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PaymentDialog extends StatefulWidget {

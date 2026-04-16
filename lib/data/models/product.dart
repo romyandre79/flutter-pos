@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:kreatif_pos/data/models/product_unit.dart';
 
 enum ProductType { service, goods }
 
@@ -49,6 +50,7 @@ class Product extends Equatable {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final int? serverId;
+  final List<ProductUnit> units;
 
   const Product({
     this.id,
@@ -66,7 +68,16 @@ class Product extends Equatable {
     this.createdAt,
     this.updatedAt,
     this.serverId,
+    this.units = const [],
   });
+
+  ProductUnit? get baseUnit => units.isNotEmpty ? units.first : null;
+
+  String get stockDisplay {
+    if (isService) return '-';
+    if (units.isEmpty) return '${stock ?? 0} $unit';
+    return units.map((u) => '${u.stock} ${u.unitName}').join(', ');
+  }
 
   bool get isService => type == ProductType.service;
   bool get isGoods => type == ProductType.goods;
@@ -88,6 +99,10 @@ class Product extends Equatable {
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'server_id': serverId,
+      // For compatibility with old schema during migration/legacy reads
+      // we keep price/stock as the first unit's values if units exist
+      'price': units.isNotEmpty ? units.first.price : price,
+      'stock': units.isNotEmpty ? units.first.stock : stock,
     };
   }
 
@@ -112,6 +127,7 @@ class Product extends Equatable {
           ? DateTime.parse(map['updated_at'] as String)
           : null,
       serverId: map['server_id'] as int?,
+      units: (map['units'] as List?)?.map((u) => ProductUnit.fromMap(u)).toList() ?? [],
     );
   }
 
@@ -148,6 +164,7 @@ class Product extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       serverId: serverId ?? this.serverId,
+      units: units ?? this.units,
     );
   }
 
@@ -168,5 +185,6 @@ class Product extends Equatable {
         createdAt,
         updatedAt,
         serverId,
+        units,
       ];
 }

@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos/data/models/supplier.dart';
-import 'package:flutter_pos/data/repositories/supplier_repository.dart';
-import 'package:flutter_pos/logic/cubits/supplier/supplier_state.dart';
+import 'package:kreatif_pos/data/models/supplier.dart';
+import 'package:kreatif_pos/data/repositories/supplier_repository.dart';
+import 'package:kreatif_pos/logic/cubits/supplier/supplier_state.dart';
 
 class SupplierCubit extends Cubit<SupplierState> {
   final SupplierRepository _supplierRepository;

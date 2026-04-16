@@ -1,6 +1,6 @@
-import 'package:flutter_pos/data/database/database_helper.dart';
-import 'package:flutter_pos/data/models/customer.dart';
-import 'package:flutter_pos/core/constants/app_constants.dart';
+import 'package:kreatif_pos/data/database/database_helper.dart';
+import 'package:kreatif_pos/data/models/customer.dart';
+import 'package:kreatif_pos/core/constants/app_constants.dart';
 
 class CustomerRepository {
   final DatabaseHelper _databaseHelper;

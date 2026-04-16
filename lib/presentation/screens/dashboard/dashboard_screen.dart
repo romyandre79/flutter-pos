@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos/core/theme/app_theme.dart';
-import 'package:flutter_pos/core/utils/currency_formatter.dart';
-import 'package:flutter_pos/data/models/order.dart';
-import 'package:flutter_pos/data/models/user.dart';
-import 'package:flutter_pos/logic/cubits/auth/auth_cubit.dart';
-import 'package:flutter_pos/logic/cubits/auth/auth_state.dart';
-import 'package:flutter_pos/logic/cubits/dashboard/dashboard_cubit.dart';
-import 'package:flutter_pos/logic/cubits/dashboard/dashboard_state.dart';
-import 'package:flutter_pos/logic/cubits/order/order_cubit.dart';
-import 'package:flutter_pos/logic/cubits/printer/printer_cubit.dart';
-import 'package:flutter_pos/presentation/screens/orders/order_detail_screen.dart';
-import 'package:flutter_pos/presentation/screens/orders/order_list_screen.dart';
-import 'package:flutter_pos/presentation/screens/settings/printer_settings_screen.dart';
-import 'package:flutter_pos/presentation/widgets/order_card.dart';
-import 'package:flutter_pos/data/repositories/product_repository.dart';
-import 'package:flutter_pos/logic/cubits/pos/pos_cubit.dart';
-import 'package:flutter_pos/logic/cubits/purchase_order/purchase_order_cubit.dart';
-import 'package:flutter_pos/presentation/screens/purchasing/purchase_order_list_screen.dart';
-import 'package:flutter_pos/data/repositories/purchase_order_repository.dart';
-import 'package:flutter_pos/logic/cubits/supplier/supplier_cubit.dart';
-import 'package:flutter_pos/data/repositories/supplier_repository.dart';
-import 'package:flutter_pos/presentation/screens/pos/pos_screen.dart';
+import 'package:kreatif_pos/core/theme/app_theme.dart';
+import 'package:kreatif_pos/core/utils/currency_formatter.dart';
+import 'package:kreatif_pos/data/models/order.dart';
+import 'package:kreatif_pos/data/models/user.dart';
+import 'package:kreatif_pos/logic/cubits/auth/auth_cubit.dart';
+import 'package:kreatif_pos/logic/cubits/auth/auth_state.dart';
+import 'package:kreatif_pos/logic/cubits/dashboard/dashboard_cubit.dart';
+import 'package:kreatif_pos/logic/cubits/dashboard/dashboard_state.dart';
+import 'package:kreatif_pos/logic/cubits/order/order_cubit.dart';
+import 'package:kreatif_pos/logic/cubits/printer/printer_cubit.dart';
+import 'package:kreatif_pos/presentation/screens/orders/order_detail_screen.dart';
+import 'package:kreatif_pos/presentation/screens/orders/order_list_screen.dart';
+import 'package:kreatif_pos/presentation/screens/settings/printer_settings_screen.dart';
+import 'package:kreatif_pos/presentation/widgets/order_card.dart';
+import 'package:kreatif_pos/data/repositories/product_repository.dart';
+import 'package:kreatif_pos/logic/cubits/pos/pos_cubit.dart';
+import 'package:kreatif_pos/logic/cubits/purchase_order/purchase_order_cubit.dart';
+import 'package:kreatif_pos/presentation/screens/purchasing/purchase_order_list_screen.dart';
+import 'package:kreatif_pos/data/repositories/purchase_order_repository.dart';
+import 'package:kreatif_pos/logic/cubits/supplier/supplier_cubit.dart';
+import 'package:kreatif_pos/data/repositories/supplier_repository.dart';
+import 'package:kreatif_pos/presentation/screens/pos/pos_screen.dart';
+import 'package:kreatif_pos/presentation/screens/inventory/unit_conversion_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Function(int)? onSwitchTab;
@@ -446,6 +447,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         create: (_) => PrinterCubit(),
                         child: const PrinterSettingsScreen(),
                       ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: _buildQuickActionItem(
+                icon: Icons.sync_alt,
+                label: 'Konversi',
+                color: Colors.blueAccent,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UnitConversionScreen(),
                     ),
                   );
                 },

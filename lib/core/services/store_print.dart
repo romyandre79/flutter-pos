@@ -1,9 +1,9 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
-import 'package:flutter_pos/data/models/order.dart';
-import 'package:flutter_pos/data/repositories/settings_repository.dart';
-import 'package:flutter_pos/core/utils/currency_formatter.dart';
-import 'package:flutter_pos/core/utils/date_formatter.dart';
-import 'package:flutter_pos/core/constants/app_constants.dart';
+import 'package:kreatif_pos/data/models/order.dart';
+import 'package:kreatif_pos/data/repositories/settings_repository.dart';
+import 'package:kreatif_pos/core/utils/currency_formatter.dart';
+import 'package:kreatif_pos/core/utils/date_formatter.dart';
+import 'package:kreatif_pos/core/constants/app_constants.dart';
 
 class StorePrint {
   StorePrint._init();

@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos/data/models/product.dart';
-import 'package:flutter_pos/data/repositories/product_repository.dart';
-import 'package:flutter_pos/logic/cubits/product/product_state.dart';
+import 'package:kreatif_pos/data/models/product.dart';
+import 'package:kreatif_pos/data/repositories/product_repository.dart';
+import 'package:kreatif_pos/logic/cubits/product/product_state.dart';
 
 class ProductCubit extends Cubit<ProductState> {
   final ProductRepository _productRepository;

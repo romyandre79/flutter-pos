@@ -1,9 +1,9 @@
-import 'package:flutter_pos/data/database/database_helper.dart';
-import 'package:flutter_pos/data/models/order.dart';
-import 'package:flutter_pos/data/models/order_item.dart';
-import 'package:flutter_pos/data/models/payment.dart';
-import 'package:flutter_pos/data/repositories/customer_repository.dart';
-import 'package:flutter_pos/core/constants/app_constants.dart';
+import 'package:kreatif_pos/data/database/database_helper.dart';
+import 'package:kreatif_pos/data/models/order.dart';
+import 'package:kreatif_pos/data/models/order_item.dart';
+import 'package:kreatif_pos/data/models/payment.dart';
+import 'package:kreatif_pos/data/repositories/customer_repository.dart';
+import 'package:kreatif_pos/core/constants/app_constants.dart';
 
 class OrderRepository {
   final DatabaseHelper _databaseHelper;
@@ -122,6 +122,7 @@ class OrderRepository {
         'total_items': order.totalItems,
         'total_weight': order.totalWeight,
         'total_price': order.totalPrice,
+        'total_discount': order.totalDiscount,
         'paid': order.paid,
         'notes': order.notes,
         'created_by': order.createdBy,
@@ -139,6 +140,7 @@ class OrderRepository {
           'quantity': item.quantity,
           'unit': item.unit,
           'price_per_unit': item.pricePerUnit,
+          'discount': item.discount,
           'subtotal': item.subtotal,
         });
       }

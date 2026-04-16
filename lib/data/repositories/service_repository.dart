@@ -1,5 +1,5 @@
-import 'package:flutter_pos/data/database/database_helper.dart';
-import 'package:flutter_pos/data/models/service.dart';
+import 'package:kreatif_pos/data/database/database_helper.dart';
+import 'package:kreatif_pos/data/models/service.dart';
 
 class ServiceRepository {
   final DatabaseHelper _databaseHelper;

@@ -1,14 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos/core/services/notification_service.dart';
-import 'package:flutter_pos/core/utils/invoice_generator.dart';
-import 'package:flutter_pos/data/models/order.dart';
-import 'package:flutter_pos/data/models/order_item.dart';
-import 'package:flutter_pos/data/models/payment.dart';
-import 'package:flutter_pos/data/repositories/customer_repository.dart';
-import 'package:flutter_pos/data/repositories/order_repository.dart';
-import 'package:flutter_pos/data/repositories/payment_repository.dart';
-import 'package:flutter_pos/data/repositories/product_repository.dart';
-import 'package:flutter_pos/logic/cubits/order/order_state.dart';
+import 'package:kreatif_pos/core/services/notification_service.dart';
+import 'package:kreatif_pos/core/utils/invoice_generator.dart';
+import 'package:kreatif_pos/data/models/order.dart';
+import 'package:kreatif_pos/data/models/order_item.dart';
+import 'package:kreatif_pos/data/models/payment.dart';
+import 'package:kreatif_pos/data/repositories/customer_repository.dart';
+import 'package:kreatif_pos/data/repositories/order_repository.dart';
+import 'package:kreatif_pos/data/repositories/payment_repository.dart';
+import 'package:kreatif_pos/data/repositories/product_repository.dart';
+import 'package:kreatif_pos/logic/cubits/order/order_state.dart';
 
 class OrderCubit extends Cubit<OrderState> {
   final OrderRepository _orderRepository;
@@ -87,6 +87,7 @@ class OrderCubit extends Cubit<OrderState> {
     int initialPayment = 0,
     PaymentMethod paymentMethod = PaymentMethod.cash,
     OrderStatus status = OrderStatus.pending,
+    int totalDiscount = 0,
   }) async {
     emit(const OrderLoading());
 
@@ -120,15 +121,16 @@ class OrderCubit extends Cubit<OrderState> {
         }
       }
 
-      // Calculate totals
-      int totalItems = items.length;
-      double totalWeight = 0;
-      int totalPrice = 0;
-
       for (final item in items) {
+        totalItems += item.quantity.round();
         totalWeight += item.quantity;
-        totalPrice += item.subtotal;
+        final unitPrice = item.pricePerUnit;
+        totalGross += (unitPrice * item.quantity).round();
+        itemDiscounts += (item.discount * item.quantity).round();
       }
+      
+      final combinedDiscount = itemDiscounts + totalDiscount;
+      final totalPrice = totalGross - combinedDiscount;
 
       // Generate invoice
       final invoiceNo = await InvoiceGenerator.generate();
@@ -150,6 +152,7 @@ class OrderCubit extends Cubit<OrderState> {
         totalItems: totalItems,
         totalWeight: totalWeight,
         totalPrice: totalPrice,
+        totalDiscount: combinedDiscount,
         paid: paidAmount,
         notes: notes?.trim(),
         createdBy: createdBy,
@@ -175,10 +178,14 @@ class OrderCubit extends Cubit<OrderState> {
         initialPayment: payment,
       );
 
-      // Deduct stock for each item
+      // Deduct stock for each item using unitId if available
       for (final item in items) {
         if (item.productId != null) {
-          await _productRepository.updateStock(item.productId!, -(item.quantity.toInt()));
+          await _productRepository.updateStock(
+            item.productId!, 
+            -item.quantity, 
+            unitId: item.unitId,
+          );
         }
       }
 

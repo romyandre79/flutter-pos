@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_pos/data/models/unit.dart';
-import 'package:flutter_pos/logic/cubits/unit/unit_cubit.dart';
+import 'package:kreatif_pos/data/models/unit.dart';
+import 'package:kreatif_pos/logic/cubits/unit/unit_cubit.dart';
 
 class UnitListScreen extends StatefulWidget {
   const UnitListScreen({Key? key}) : super(key: key);
