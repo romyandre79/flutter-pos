@@ -121,6 +121,11 @@ class OrderCubit extends Cubit<OrderState> {
         }
       }
 
+      int totalItems = 0;
+      double totalWeight = 0;
+      int totalGross = 0;
+      int itemDiscounts = 0;
+
       for (final item in items) {
         totalItems += item.quantity.round();
         totalWeight += item.quantity;

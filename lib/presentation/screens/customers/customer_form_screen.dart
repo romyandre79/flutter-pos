@@ -338,6 +338,66 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     );
   }
 
+  Widget _buildDiscountCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: AppRadius.lgRadius,
+        boxShadow: AppShadows.card,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Title
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  gradient: AppThemeColors.primaryGradient,
+                  borderRadius: AppRadius.fullRadius,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Diskon Default',
+                style: AppTypography.titleSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // Discount Field
+          _buildInputLabel('Diskon Otomatis (%)'),
+          const SizedBox(height: AppSpacing.sm),
+          TextFormField(
+            controller: _defaultDiscountController,
+            style: AppTypography.bodyMedium,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            decoration: _buildInputDecoration(
+              hintText: 'Contoh: 10',
+              prefixIcon: Icons.percent,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '* Diskon ini akan otomatis diterapkan ke setiap item saat membuat pesanan untuk pelanggan ini.',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppThemeColors.textSecondary,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInputLabel(String label, {bool isRequired = false}) {
     return Row(
       children: [

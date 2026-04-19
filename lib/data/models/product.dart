@@ -87,9 +87,7 @@ class Product extends Equatable {
       'id': id,
       'name': name,
       'description': description,
-      'price': price,
       'cost': cost,
-      'stock': stock,
       'unit': unit,
       'type': type.value,
       'duration_days': durationDays,
@@ -102,7 +100,7 @@ class Product extends Equatable {
       // For compatibility with old schema during migration/legacy reads
       // we keep price/stock as the first unit's values if units exist
       'price': units.isNotEmpty ? units.first.price : price,
-      'stock': units.isNotEmpty ? units.first.stock : stock,
+      'stock': units.isNotEmpty ? units.first.stock.round() : stock,
     };
   }
 
@@ -147,6 +145,7 @@ class Product extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     int? serverId,
+    List<ProductUnit>? units,
   }) {
     return Product(
       id: id ?? this.id,

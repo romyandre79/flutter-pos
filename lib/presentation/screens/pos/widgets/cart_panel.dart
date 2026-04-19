@@ -9,6 +9,8 @@ import 'package:kreatif_pos/logic/cubits/order/order_state.dart';
 import 'package:kreatif_pos/logic/cubits/pos/pos_cubit.dart';
 import 'package:kreatif_pos/logic/cubits/pos/pos_state.dart';
 import 'package:kreatif_pos/data/models/customer.dart';
+import 'package:kreatif_pos/data/models/cart_item.dart';
+import 'package:kreatif_pos/data/models/product_unit.dart';
 import 'package:kreatif_pos/data/repositories/customer_repository.dart';
 import 'package:kreatif_pos/data/models/order.dart'; // Add OrderStatus import
 import 'package:kreatif_pos/presentation/widgets/payment_dialog.dart';
@@ -423,11 +425,6 @@ class CartPanel extends StatelessWidget {
             child: const Text('Simpan'),
           ),
         ],
-      ),
-    );
-  }
-          ],
-        ),
       ),
     );
   }

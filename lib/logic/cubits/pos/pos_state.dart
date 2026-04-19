@@ -35,9 +35,9 @@ class PosLoaded extends PosState {
     this.orderDiscount = 0,
   });
 
-  int get totalAmount => cartItems.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
-  int get totalItems => cartItems.fold(0, (sum, item) => sum + (item.quantity as num).toInt());
-  int get totalItemDiscount => cartItems.fold(0, (sum, item) => sum + (item.discount * item.quantity));
+  int get totalAmount => cartItems.fold(0, (sum, item) => sum + (item.product.price * item.quantity).round());
+  int get totalItems => cartItems.fold(0, (sum, item) => sum + item.quantity.round());
+  int get totalItemDiscount => cartItems.fold(0, (sum, item) => sum + (item.discount * item.quantity).round());
   int get totalDiscount => totalItemDiscount + orderDiscount;
   int get grandTotal => totalAmount - totalDiscount;
 
